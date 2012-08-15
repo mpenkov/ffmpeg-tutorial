@@ -10,7 +10,7 @@ INCLUDES=`pkg-config --cflags libavcodec libavformat libavutil libswscale sdl op
 CFLAGS=-Wall -ggdb $(INCLUDES) -Wno-write-strings -Wno-unused
 LDFLAGS=`pkg-config --libs libavcodec libavformat libavutil libswscale sdl opencv` -lm
 EXE=tutorial01.out tutorial02.out tutorial03.out tutorial04.out\
-	tutorial05.out tutorial06.out tutorial07.out tutorial08.out
+	tutorial05.out tutorial06.out tutorial07.out
 SRC=
 OBJ=$(patsubst %.c,obj/%.o,$(SRC))
 
