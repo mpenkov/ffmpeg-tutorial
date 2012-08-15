@@ -4,7 +4,7 @@ ffmpeg-tutorial
 This repository contains files from an FFmpeg tutorial originally written
 by Stephen Dranger.  The files have been updated to work with the most
 recent version of FFmpeg (N-42806-gf4451d2 at the time of writing).  The
-original tutorial is located (here)[http://dranger.com/ffmpeg/].
+original tutorial is located [here](http://dranger.com/ffmpeg/).
 
 Main changes:
 
@@ -25,5 +25,8 @@ before --> after
 * CODEC_TYPE_VIDEO --> AVMEDIA_TYPE_VIDEO
 * avcodec_open --> avcodec_open2
 * avcodec_decode_video --> avcodec_decode_video2
-* img_convert --> sws_scale (this is a relatively big change)
+* img_convert --> sws_scale (this was a relatively big change)
 * av_close_input_file --> avformat_close_input
+* avcodec_decode_audio2 --> avcodec_decode_audio4 (this was a big change.
+  I rewrote the whole audio_decode_frame function to deal with this.)
+*
