@@ -2,15 +2,14 @@
 // A pedagogical video player that will stream through every video frame as fast as it can
 // and play audio (out of sync).
 //
-// This tutorial was written by Stephen Dranger (dranger@gmail.com) and updated
-// for ffmpeg version N-42806-gf4451d2 by Michael Penkov 
-// (misha.penkov@gmail.com). 
-//
 // Code based on FFplay, Copyright (c) 2003 Fabrice Bellard, 
 // and a tutorial by Martin Bohme (boehme@inb.uni-luebeckREMOVETHIS.de)
 // Tested on Gentoo, CVS version 5/01/07 compiled with GCC 4.1.1
+// Use
 //
-// Use the Makefile to build all examples.
+// gcc -o tutorial03 tutorial03.c -lavformat -lavcodec -lz -lm `sdl-config --cflags --libs`
+// to build (assuming libavformat and libavcodec are correctly installed, 
+// and assuming you have sdl-config. Please refer to SDL docs for your installation.)
 //
 // Run using
 // tutorial03 myvideofile.mpg
@@ -18,9 +17,8 @@
 // to play the stream on your screen.
 
 
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswscale/swscale.h>
+#include <ffmpeg/avcodec.h>
+#include <ffmpeg/avformat.h>
 
 #include <SDL.h>
 #include <SDL_thread.h>
@@ -113,148 +111,51 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
   return ret;
 }
 
-/*
- * Decode an audio frame.
- *
- * @param[in] aCodecCtx The codec context of the audio stream we're decoding.
- * @param[out] frame The decoded audio frame.
- *
- * @returns the number of bytes decoded or -1 if the application was 
- * signalled to terminate.
- */
-int 
-audio_decode_frame
-(AVCodecContext *aCodecCtx, AVFrame *frame) 
-{
-    static AVPacket pkt;
-    static int old_pkt_size;
-    static uint8_t *old_pkt_data;
-    static int init_flag = 1;
+int audio_decode_frame(AVCodecContext *aCodecCtx, uint8_t *audio_buf, int buf_size) {
 
-    /*
-     * pkt  The current packet.
-     * old_pkt_size
-     *      The original size of the packet.
-     * old_pkt_data
-     *      A pointer to the original start of the data for the packet.
-     *      As we process each packet, we decrement/increment the size
-     *      and its data pointer, respectively.  These old values allow
-     *      the packet to be properly freed when it's no longer needed.
-     *
-     * Note that all of the above are static, meaning they will persist
-     * between separate calls to this function.
-     *
-     * NB. a good reference for using the new avcodec_decode_audio4 function:
-     *
-     * https://github.com/FFmpeg/FFmpeg/blob/master/doc/examples/decoding_encoding.c
-     */
+  static AVPacket pkt;
+  static uint8_t *audio_pkt_data = NULL;
+  static int audio_pkt_size = 0;
 
-    /*
-     * If the function is being called for the first time, initialize the 
-     * packet.
-     *
-     * TODO: not sure how necessary this is, but the sample referenced above
-     * does it.
-     */
-    if (init_flag)
-    {
-        av_init_packet(&pkt);
-        init_flag = 0;
+  int len1, data_size;
+
+  for(;;) {
+    while(audio_pkt_size > 0) {
+      data_size = buf_size;
+      len1 = avcodec_decode_audio2(aCodecCtx, (int16_t *)audio_buf, &data_size, 
+				  audio_pkt_data, audio_pkt_size);
+      if(len1 < 0) {
+	/* if error, skip frame */
+	audio_pkt_size = 0;
+	break;
+      }
+      audio_pkt_data += len1;
+      audio_pkt_size -= len1;
+      if(data_size <= 0) {
+	/* No data yet, get more frames */
+	continue;
+      }
+      /* We have data, return it and come back for more later */
+      return data_size;
+    }
+    if(pkt.data)
+      av_free_packet(&pkt);
+
+    if(quit) {
+      return -1;
     }
 
-    /*
-     * The outer loop grabs new packets into pkt.  The inner loop runs until 
-     * the current packet is consumed in its entirety.  If some data is 
-     * actually decoded, then the function will return, but when invoked
-     * in the future, the inner loop will resume reading the packet from where
-     * it left off.
-     *
-     * TODO: I'm not sure how necessary the inner loop is.  It seems that one
-     * call to avcodec_decode_audio4 is enough to decode the packet entirely.
-     */
-    for (;;) 
-    {
-        while (pkt.size > 0) 
-        {
-            int bytes_consumed;
-            int got_frame;
-            /*
-             * bytes_consumed
-             *          The number of bytes consumed from the current packet
-             *          during this iteration.
-             * got_frame
-             *          avcodec_decode_audio4 sets this to non-zero if a 
-             *          frame could be decoded, zero otherwise.
-             */
-            bytes_consumed = 
-                avcodec_decode_audio4
-                (
-                    aCodecCtx, 
-                    frame,
-                    &got_frame,
-                    &pkt
-                );
-
-            if (bytes_consumed < 0) 
-            {
-                /* 
-                 * if error, skip packet.
-                 */
-                break;
-            }
-
-            pkt.size -= bytes_consumed;
-            pkt.data += bytes_consumed;
-
-            if (got_frame)
-            {
-                int bytes_decoded = 
-                    av_samples_get_buffer_size
-                    (
-                        NULL, 
-                        aCodecCtx->channels,
-                        frame->nb_samples,
-                        aCodecCtx->sample_fmt, 
-                        1
-                    );
-                return bytes_decoded;
-            }
-        }
-
-        if (pkt.data)
-        {
-            pkt.data = old_pkt_data;
-            pkt.size = old_pkt_size;
-            av_free_packet(&pkt);
-        }
-
-        if (quit) 
-            return -1;
-
-        /*
-         * This is where we actually get a new packet from the global 
-         * packet queue.
-         *
-         * NB.  The reason this happens all the way at the end of the loop is
-         * that the function may be called while a packet is half-consumed.
-         * In that case, we want to make sure we consume the entire packet
-         * before grabbing a new one.
-         *
-         * Keep in mind that pkt is static, so it persists between calls to 
-         * this function.
-         */
-        if (packet_queue_get(&audioq, &pkt, 1) < 0) 
-            return -1;
-
-        old_pkt_data = pkt.data;
-        old_pkt_size = pkt.size;
+    if(packet_queue_get(&audioq, &pkt, 1) < 0) {
+      return -1;
     }
+    audio_pkt_data = pkt.data;
+    audio_pkt_size = pkt.size;
+  }
 }
 
 void audio_callback(void *userdata, Uint8 *stream, int len) {
 
   AVCodecContext *aCodecCtx = (AVCodecContext *)userdata;
-  AVFrame frame;
   int len1, audio_size;
 
   static uint8_t audio_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
@@ -264,13 +165,12 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
   while(len > 0) {
     if(audio_buf_index >= audio_buf_size) {
       /* We have already sent all our data; get more */
-      audio_size = audio_decode_frame(aCodecCtx, &frame);
+      audio_size = audio_decode_frame(aCodecCtx, audio_buf, sizeof(audio_buf));
       if(audio_size < 0) {
 	/* If error, output silence */
 	audio_buf_size = 1024; // arbitrary?
 	memset(audio_buf, 0, audio_buf_size);
       } else {
-    memcpy(audio_buf, frame.data[0], audio_size);
 	audio_buf_size = audio_size;
       }
       audio_buf_index = 0;
@@ -286,27 +186,23 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
 }
 
 int main(int argc, char *argv[]) {
-  AVFormatContext *pFormatCtx = NULL;
+  AVFormatContext *pFormatCtx;
   int             i, videoStream, audioStream;
-  AVCodecContext  *pCodecCtx = NULL;
-  AVCodec         *pCodec = NULL;
-  AVFrame         *pFrame = NULL; 
+  AVCodecContext  *pCodecCtx;
+  AVCodec         *pCodec;
+  AVFrame         *pFrame; 
   AVPacket        packet;
   int             frameFinished;
   float           aspect_ratio;
   
-  AVCodecContext  *aCodecCtx = NULL;
-  AVCodec         *aCodec = NULL;
+  AVCodecContext  *aCodecCtx;
+  AVCodec         *aCodec;
 
-  SDL_Overlay     *bmp = NULL;
-  SDL_Surface     *screen = NULL;
+  SDL_Overlay     *bmp;
+  SDL_Surface     *screen;
   SDL_Rect        rect;
   SDL_Event       event;
   SDL_AudioSpec   wanted_spec, spec;
-
-  struct SwsContext   *sws_ctx            = NULL;
-  AVDictionary        *videoOptionsDict   = NULL;
-  AVDictionary        *audioOptionsDict   = NULL;
 
   if(argc < 2) {
     fprintf(stderr, "Usage: test <file>\n");
@@ -321,25 +217,25 @@ int main(int argc, char *argv[]) {
   }
 
   // Open video file
-  if(avformat_open_input(&pFormatCtx, argv[1], NULL, NULL)!=0)
+  if(av_open_input_file(&pFormatCtx, argv[1], NULL, 0, NULL)!=0)
     return -1; // Couldn't open file
   
   // Retrieve stream information
-  if(avformat_find_stream_info(pFormatCtx, NULL)<0)
+  if(av_find_stream_info(pFormatCtx)<0)
     return -1; // Couldn't find stream information
   
   // Dump information about file onto standard error
-  av_dump_format(pFormatCtx, 0, argv[1], 0);
+  dump_format(pFormatCtx, 0, argv[1], 0);
   
   // Find the first video stream
   videoStream=-1;
   audioStream=-1;
   for(i=0; i<pFormatCtx->nb_streams; i++) {
-    if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO &&
+    if(pFormatCtx->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO &&
        videoStream < 0) {
       videoStream=i;
     }
-    if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO &&
+    if(pFormatCtx->streams[i]->codec->codec_type==CODEC_TYPE_AUDIO &&
        audioStream < 0) {
       audioStream=i;
     }
@@ -368,7 +264,7 @@ int main(int argc, char *argv[]) {
     fprintf(stderr, "Unsupported codec!\n");
     return -1;
   }
-  avcodec_open2(aCodecCtx, aCodec, &audioOptionsDict);
+  avcodec_open(aCodecCtx, aCodec);
 
   // audio_st = pFormatCtx->streams[index]
   packet_queue_init(&audioq);
@@ -384,7 +280,7 @@ int main(int argc, char *argv[]) {
     return -1; // Codec not found
   }
   // Open codec
-  if(avcodec_open2(pCodecCtx, pCodec, &videoOptionsDict)<0)
+  if(avcodec_open(pCodecCtx, pCodec)<0)
     return -1; // Could not open codec
   
   // Allocate video frame
@@ -407,20 +303,6 @@ int main(int argc, char *argv[]) {
 				 pCodecCtx->height,
 				 SDL_YV12_OVERLAY,
 				 screen);
-  sws_ctx =
-    sws_getContext
-    (
-        pCodecCtx->width,
-        pCodecCtx->height,
-        pCodecCtx->pix_fmt,
-        pCodecCtx->width,
-        pCodecCtx->height,
-        PIX_FMT_YUV420P,
-        SWS_BILINEAR,
-        NULL,
-        NULL,
-        NULL
-    );
 
 
   // Read frames and save first five frames to disk
@@ -429,8 +311,8 @@ int main(int argc, char *argv[]) {
     // Is this a packet from the video stream?
     if(packet.stream_index==videoStream) {
       // Decode video frame
-      avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, 
-			   &packet);
+      avcodec_decode_video(pCodecCtx, pFrame, &frameFinished, 
+			   packet.data, packet.size);
       
       // Did we get a video frame?
       if(frameFinished) {
@@ -446,16 +328,9 @@ int main(int argc, char *argv[]) {
 	pict.linesize[2] = bmp->pitches[1];
 
 	// Convert the image into YUV format that SDL uses
-    sws_scale
-    (
-        sws_ctx, 
-        (uint8_t const * const *)pFrame->data, 
-        pFrame->linesize, 
-        0,
-        pCodecCtx->height,
-        pict.data,
-        pict.linesize
-    );
+	img_convert(&pict, PIX_FMT_YUV420P,
+                    (AVPicture *)pFrame, pCodecCtx->pix_fmt, 
+		    pCodecCtx->width, pCodecCtx->height);
 	
 	SDL_UnlockYUVOverlay(bmp);
 	
@@ -492,7 +367,7 @@ int main(int argc, char *argv[]) {
   avcodec_close(pCodecCtx);
   
   // Close the video file
-  avformat_close_input(&pFormatCtx);
+  av_close_input_file(pFormatCtx);
   
   return 0;
 }
