@@ -1,16 +1,16 @@
 // tutorial01.c
+//
+// This tutorial was written by Stephen Dranger (dranger@gmail.com) and updated
+// for ffmpeg version N-42806-gf4451d2 by Michael Penkov 
+// (misha.penkov@gmail.com). 
+//
 // Code based on a tutorial by Martin Bohme (boehme@inb.uni-luebeckREMOVETHIS.de)
 // Tested on Gentoo, CVS version 5/01/07 compiled with GCC 4.1.1
 
 // A small sample program that shows how to use libavformat and libavcodec to
 // read video from a file.
 //
-// Use
-//
-// gcc -o tutorial01 tutorial01.c -lavformat -lavcodec -lz
-//
-// to build (assuming libavformat and libavcodec are correctly installed
-// your system).
+// Use the Makefile to build all examples.
 //
 // Run using
 //
@@ -19,8 +19,9 @@
 // to write the first five frames from "myvideofile.mpg" to disk in PPM
 // format.
 
-#include <ffmpeg/avcodec.h>
-#include <ffmpeg/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
 
 #include <stdio.h>
 
@@ -47,16 +48,19 @@ void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame) {
 }
 
 int main(int argc, char *argv[]) {
-  AVFormatContext *pFormatCtx;
+  AVFormatContext *pFormatCtx = NULL;
   int             i, videoStream;
-  AVCodecContext  *pCodecCtx;
-  AVCodec         *pCodec;
-  AVFrame         *pFrame; 
-  AVFrame         *pFrameRGB;
+  AVCodecContext  *pCodecCtx = NULL;
+  AVCodec         *pCodec = NULL;
+  AVFrame         *pFrame = NULL; 
+  AVFrame         *pFrameRGB = NULL;
   AVPacket        packet;
   int             frameFinished;
   int             numBytes;
-  uint8_t         *buffer;
+  uint8_t         *buffer = NULL;
+
+  AVDictionary    *optionsDict = NULL;
+  struct SwsContext      *sws_ctx = NULL;
   
   if(argc < 2) {
     printf("Please provide a movie file\n");
@@ -66,20 +70,20 @@ int main(int argc, char *argv[]) {
   av_register_all();
   
   // Open video file
-  if(av_open_input_file(&pFormatCtx, argv[1], NULL, 0, NULL)!=0)
+  if(avformat_open_input(&pFormatCtx, argv[1], NULL, NULL)!=0)
     return -1; // Couldn't open file
   
   // Retrieve stream information
-  if(av_find_stream_info(pFormatCtx)<0)
+  if(avformat_find_stream_info(pFormatCtx, NULL)<0)
     return -1; // Couldn't find stream information
   
   // Dump information about file onto standard error
-  dump_format(pFormatCtx, 0, argv[1], 0);
+  av_dump_format(pFormatCtx, 0, argv[1], 0);
   
   // Find the first video stream
   videoStream=-1;
   for(i=0; i<pFormatCtx->nb_streams; i++)
-    if(pFormatCtx->streams[i]->codec->codec_type==CODEC_TYPE_VIDEO) {
+    if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
       videoStream=i;
       break;
     }
@@ -96,7 +100,7 @@ int main(int argc, char *argv[]) {
     return -1; // Codec not found
   }
   // Open codec
-  if(avcodec_open(pCodecCtx, pCodec)<0)
+  if(avcodec_open2(pCodecCtx, pCodec, &optionsDict)<0)
     return -1; // Could not open codec
   
   // Allocate video frame
@@ -111,6 +115,21 @@ int main(int argc, char *argv[]) {
   numBytes=avpicture_get_size(PIX_FMT_RGB24, pCodecCtx->width,
 			      pCodecCtx->height);
   buffer=(uint8_t *)av_malloc(numBytes*sizeof(uint8_t));
+
+  sws_ctx =
+    sws_getContext
+    (
+        pCodecCtx->width,
+        pCodecCtx->height,
+        pCodecCtx->pix_fmt,
+        pCodecCtx->width,
+        pCodecCtx->height,
+        PIX_FMT_RGB24,
+        SWS_BILINEAR,
+        NULL,
+        NULL,
+        NULL
+    );
   
   // Assign appropriate parts of buffer to image planes in pFrameRGB
   // Note that pFrameRGB is an AVFrame, but AVFrame is a superset
@@ -124,15 +143,22 @@ int main(int argc, char *argv[]) {
     // Is this a packet from the video stream?
     if(packet.stream_index==videoStream) {
       // Decode video frame
-      avcodec_decode_video(pCodecCtx, pFrame, &frameFinished, 
-			   packet.data, packet.size);
+      avcodec_decode_video2(pCodecCtx, pFrame, &frameFinished, 
+			   &packet);
       
       // Did we get a video frame?
       if(frameFinished) {
 	// Convert the image from its native format to RGB
-	img_convert((AVPicture *)pFrameRGB, PIX_FMT_RGB24, 
-                    (AVPicture*)pFrame, pCodecCtx->pix_fmt, pCodecCtx->width, 
-                    pCodecCtx->height);
+        sws_scale
+        (
+            sws_ctx,
+            (uint8_t const * const *)pFrame->data,
+            pFrame->linesize,
+            0,
+            pCodecCtx->height,
+            pFrameRGB->data,
+            pFrameRGB->linesize
+        );
 	
 	// Save the frame to disk
 	if(++i<=5)
@@ -156,7 +182,7 @@ int main(int argc, char *argv[]) {
   avcodec_close(pCodecCtx);
   
   // Close the video file
-  av_close_input_file(pFormatCtx);
+  avformat_close_input(&pFormatCtx);
   
   return 0;
 }
