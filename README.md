@@ -29,4 +29,7 @@ before --> after
 * av_close_input_file --> avformat_close_input
 * avcodec_decode_audio2 --> avcodec_decode_audio4 (this was a big change.
   I rewrote the whole audio_decode_frame function to deal with this.)
-*
+* CODEC_TYPE_AUDIO --> AVMEDIA_TYPE_AUDIO
+* url_set_interrupt_cb --> avio_open2
+* url_ferror --> check attribute is->pFormatCtx->pb->error
+* pstrcpy --> av_strlcpy
