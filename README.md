@@ -1,23 +1,36 @@
 ffmpeg-tutorial
 ===============
 
-This repository contains files from an FFmpeg tutorial originally written
-by Stephen Dranger.  The files have been updated to work with the most
-recent version of FFmpeg (N-42806-gf4451d2 at the time of writing).  The
-original tutorial is located [here](http://dranger.com/ffmpeg/).
+This repository contains files from an FFmpeg tutorial originally written by
+Stephen Dranger (dranger@gmail.com).  The files have been updated to work with
+the most recent version of FFmpeg (N-42806-gf4451d2 at the time of writing).
+The updates were performed with an effort to modify as little code as possible,
+so that the original code and tutorial descriptions could be easily consulted.
+
+The code from the original tutorial and the accompanying description is located
+[here](http://dranger.com/ffmpeg/).
 
 Main changes:
 
 * Renamed includes, e.g. ffmpeg/avcodec.h --> libavcodec/avcodec.h
 * Work around deprecated functions and symbols (see below)
 * Initializing pointers to NULL on declaration.  Some FFmpeg functions
-  (e.g. avformat_open_input) segfault when given uninitialized pointers 
-  as input.
+  (e.g. avformat_open_input) now segfault when given uninitialized pointers as
+  input.
+* Removed tutorial08.c, which introduced software scaling (as
+  opposed to using the img_convert method).  img_convert has been deprecated
+  and is no longer available, so these new tutorials use software scaling
+  from the very beginning, and a separate tutorial is not necessary.
 
 Deprecated functions and symbols
 --------------------------------
 
-before --> after
+This section describes the changes made to work around deprecated functions
+and symbols, in the format: before --> after.  In some cases, a simple rename
+sufficed (e.g. dump_format), but in others, more significant changes to the
+code were required (e.g. avcodec_decode_audio2).  Consult the diffs for each
+respective tutorial to see exactly what has changed since the original 
+version of the tutorial.
 
 * av_open_input_file --> avformat_open_input
 * av_find_stream_info --> avformat_find_stream_info
