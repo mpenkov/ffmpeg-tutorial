@@ -2,13 +2,9 @@
 # http://www.gnu.org/software/make/manual/make.html
 #
 CC=gcc
-INCLUDES=`pkg-config --cflags libavcodec libavformat libavutil libswscale sdl opencv`
-#
-# -Wno-unused is to get rid of lots of warnings from within OpenCV source.
-# I can't really do much more about them.
-#
-CFLAGS=-Wall -ggdb $(INCLUDES) -Wno-write-strings -Wno-unused
-LDFLAGS=`pkg-config --libs libavcodec libavformat libavutil libswscale sdl opencv` -lm
+INCLUDES=$(pkg-config --cflags libavformat libavcodec libswscale libavutil sdl)
+CFLAGS=-Wall -ggdb
+LDFLAGS=$(pkg-config --libs libavformat libavcodec libswscale libavutil sdl) -lm
 EXE=tutorial01.out tutorial02.out tutorial03.out tutorial04.out\
 	tutorial05.out tutorial06.out tutorial07.out
 SRC=
@@ -34,10 +30,10 @@ tags: *.c
 	ctags *.c
 
 bin/%.out: obj/%.o $(OBJ)
-	$(CC) $(CFLAGS) $(INCLUDES) $(LDFLAGS) $< $(OBJ) -o $@
+	$(CC) $(CFLAGS) $< $(OBJ) $(LDFLAGS) -o $@
 
 obj/%.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
 
 clean:
 	rm -f obj/*
