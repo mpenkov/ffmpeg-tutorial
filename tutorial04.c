@@ -546,7 +546,7 @@ int decode_interrupt_cb(void *opaque) {
 int decode_thread(void *arg) {
 
   VideoState *is = (VideoState *)arg;
-  AVFormatContext *pFormatCtx;
+  AVFormatContext *pFormatCtx = NULL;
   AVPacket pkt1, *packet = &pkt1;
 
   int video_index = -1;
