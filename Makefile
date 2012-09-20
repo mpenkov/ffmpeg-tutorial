@@ -2,9 +2,9 @@
 # http://www.gnu.org/software/make/manual/make.html
 #
 CC=gcc
-INCLUDES=$(pkg-config --cflags libavformat libavcodec libswscale libavutil sdl)
+INCLUDES=`pkg-config --cflags libavformat libavcodec libswscale libavutil sdl`
 CFLAGS=-Wall -ggdb
-LDFLAGS=$(pkg-config --libs libavformat libavcodec libswscale libavutil sdl) -lm
+LDFLAGS=`pkg-config --libs libavformat libavcodec libswscale libavutil sdl` -lm
 EXE=tutorial01.out tutorial02.out tutorial03.out tutorial04.out\
 	tutorial05.out tutorial06.out tutorial07.out
 SRC=
@@ -33,7 +33,7 @@ bin/%.out: obj/%.o $(OBJ)
 	$(CC) $(CFLAGS) $< $(OBJ) $(LDFLAGS) -o $@
 
 obj/%.o : %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c $< -o $@
+	$(CC) $(CFLAGS) $< $(INCLUDES) -c -o $@
 
 clean:
 	rm -f obj/*
