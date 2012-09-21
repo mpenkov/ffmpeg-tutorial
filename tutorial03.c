@@ -208,7 +208,7 @@ int main(int argc, char *argv[]) {
   AVFrame         *pFrame = NULL; 
   AVPacket        packet;
   int             frameFinished;
-  float           aspect_ratio;
+  //float           aspect_ratio;
   
   AVCodecContext  *aCodecCtx = NULL;
   AVCodec         *aCodec = NULL;

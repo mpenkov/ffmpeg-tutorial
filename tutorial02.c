@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   AVFrame         *pFrame = NULL; 
   AVPacket        packet;
   int             frameFinished;
-  float           aspect_ratio;
+  //float           aspect_ratio;
 
   AVDictionary    *optionsDict = NULL;
   struct SwsContext *sws_ctx = NULL;
