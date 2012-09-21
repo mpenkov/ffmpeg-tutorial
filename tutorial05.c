@@ -297,10 +297,10 @@ void video_display(VideoState *is) {
 
   SDL_Rect rect;
   VideoPicture *vp;
-  AVPicture pict;
+  //AVPicture pict;
   float aspect_ratio;
   int w, h, x, y;
-  int i;
+  //int i;
 
   vp = &is->pictq[is->pictq_rindex];
   if(vp->bmp) {
@@ -662,7 +662,7 @@ int stream_component_open(VideoState *is, int stream_index) {
     break;
   }
 
-
+  return 0;
 }
 
 int decode_interrupt_cb(void *opaque) {
