@@ -824,6 +824,13 @@ int main(int argc, char *argv[]) {
     case FF_QUIT_EVENT:
     case SDL_QUIT:
       is->quit = 1;
+      /*
+       * If the video has finished playing, then both the picture and
+       * audio queues are waiting for more data.  Make them stop
+       * waiting and terminate normally.
+       */
+      SDL_CondSignal(is->audioq.cond);
+      SDL_CondSignal(is->videoq.cond);
       SDL_Quit();
       exit(0);
       break;
