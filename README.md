@@ -11,6 +11,7 @@ The code from the original tutorial and the accompanying description is located
 [here](http://dranger.com/ffmpeg/).
 
 Main changes:
+-------------
 
 * Renamed includes, e.g. ffmpeg/avcodec.h --> libavcodec/avcodec.h
 * Work around deprecated functions and symbols (see below)
@@ -22,7 +23,7 @@ Main changes:
   and is no longer available, so these new tutorials use software scaling
   from the very beginning, and a separate tutorial is not necessary.
 
-Deprecated functions and symbols
+Deprecated Functions and Symbols
 --------------------------------
 
 This section describes the changes made to work around deprecated functions
@@ -45,3 +46,19 @@ version of the tutorial.
 * url_set_interrupt_cb --> avio_open2
 * url_ferror --> check attribute is->pFormatCtx->pb->error
 * pstrcpy --> av_strlcpy
+
+Building and Running
+--------------------
+
+First, make sure you have a recent installation of FFmpeg.  It's recommended
+that you build FFmpeg from source as described in 
+[this link](https://ffmpeg.org/trac/ffmpeg/wiki/UbuntuCompilationGuide).
+
+To build the tutorials:
+
+    cd ffmpeg-tutorial
+    make
+
+To run a tutorial:
+
+    bin/tutorial01.out
