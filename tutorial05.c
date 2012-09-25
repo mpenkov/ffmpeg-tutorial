@@ -419,7 +419,6 @@ void alloc_picture(void *userdata) {
 int queue_picture(VideoState *is, AVFrame *pFrame, double pts) {
 
   VideoPicture *vp;
-  int dst_pix_fmt;
   AVPicture pict;
 
   /* wait until we have space for a new pic */
@@ -467,7 +466,6 @@ int queue_picture(VideoState *is, AVFrame *pFrame, double pts) {
 
     SDL_LockYUVOverlay(vp->bmp);
     
-    dst_pix_fmt = PIX_FMT_YUV420P;
     /* point pict at the queue */
 
     pict.data[0] = vp->bmp->pixels[0];
@@ -543,7 +541,7 @@ void our_release_buffer(struct AVCodecContext *c, AVFrame *pic) {
 int video_thread(void *arg) {
   VideoState *is = (VideoState *)arg;
   AVPacket pkt1, *packet = &pkt1;
-  int len1, frameFinished;
+  int frameFinished;
   AVFrame *pFrame;
   double pts;
 
@@ -559,7 +557,7 @@ int video_thread(void *arg) {
     // Save global pts to be stored in pFrame in first call
     global_video_pkt_pts = packet->pts;
     // Decode video frame
-    len1 = avcodec_decode_video2(is->video_st->codec, pFrame, &frameFinished, 
+    avcodec_decode_video2(is->video_st->codec, pFrame, &frameFinished, 
 				packet);
     if(packet->dts == AV_NOPTS_VALUE 
        && pFrame->opaque && *(uint64_t*)pFrame->opaque != AV_NOPTS_VALUE) {

@@ -297,13 +297,14 @@ void video_display(VideoState *is) {
 void video_refresh_timer(void *userdata) {
 
   VideoState *is = (VideoState *)userdata;
-  VideoPicture *vp;
+  // vp is used in later tutorials for synchronization
+  //VideoPicture *vp;
   
   if(is->video_st) {
     if(is->pictq_size == 0) {
       schedule_refresh(is, 1);
     } else {
-      vp = &is->pictq[is->pictq_rindex];
+      //vp = &is->pictq[is->pictq_rindex];
       /* Now, normally here goes a ton of code
 	 about timing, etc. we're just going to
 	 guess at a delay for now. You can
@@ -358,7 +359,6 @@ void alloc_picture(void *userdata) {
 int queue_picture(VideoState *is, AVFrame *pFrame) {
 
   VideoPicture *vp;
-  int dst_pix_fmt;
   AVPicture pict;
 
   /* wait until we have space for a new pic */
@@ -403,7 +403,6 @@ int queue_picture(VideoState *is, AVFrame *pFrame) {
 
     SDL_LockYUVOverlay(vp->bmp);
     
-    dst_pix_fmt = PIX_FMT_YUV420P;
     /* point pict at the queue */
 
     pict.data[0] = vp->bmp->pixels[0];
@@ -441,7 +440,7 @@ int queue_picture(VideoState *is, AVFrame *pFrame) {
 int video_thread(void *arg) {
   VideoState *is = (VideoState *)arg;
   AVPacket pkt1, *packet = &pkt1;
-  int len1, frameFinished;
+  int frameFinished;
   AVFrame *pFrame;
 
   pFrame = avcodec_alloc_frame();
@@ -452,7 +451,7 @@ int video_thread(void *arg) {
       break;
     }
     // Decode video frame
-    len1 = avcodec_decode_video2(is->video_st->codec, pFrame, &frameFinished, 
+    avcodec_decode_video2(is->video_st->codec, pFrame, &frameFinished, 
 				packet);
 
     // Did we get a video frame?
