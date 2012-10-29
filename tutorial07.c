@@ -310,12 +310,6 @@ int audio_decode_frame(VideoState *is, double *pts_ptr) {
 	is->audio_pkt_size = 0;
 	break;
       }
-      is->audio_pkt_data += len1;
-      is->audio_pkt_size -= len1;
-      if(data_size <= 0) {
-	/* No data yet, get more frames */
-	continue;
-      }
       if (got_frame)
       {
           data_size = 
@@ -328,6 +322,12 @@ int audio_decode_frame(VideoState *is, double *pts_ptr) {
                 1
             );
           memcpy(is->audio_buf, is->audio_frame.data[0], data_size);
+      }
+      is->audio_pkt_data += len1;
+      is->audio_pkt_size -= len1;
+      if(data_size <= 0) {
+	/* No data yet, get more frames */
+	continue;
       }
       pts = is->audio_clock;
       *pts_ptr = pts;
