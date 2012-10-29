@@ -244,7 +244,7 @@ int synchronize_audio(VideoState *is, short *samples,
   
   if(is->av_sync_type != AV_SYNC_AUDIO_MASTER) {
     double diff, avg_diff;
-    int wanted_size, min_size, max_size, nb_samples;
+    int wanted_size, min_size, max_size /*, nb_samples */;
     
     ref_clock = get_master_clock(is);
     diff = get_audio_clock(is) - ref_clock;
@@ -409,10 +409,10 @@ void video_display(VideoState *is) {
 
   SDL_Rect rect;
   VideoPicture *vp;
-  AVPicture pict;
+  //AVPicture pict;
   float aspect_ratio;
   int w, h, x, y;
-  int i;
+  //int i;
 
   vp = &is->pictq[is->pictq_rindex];
   if(vp->bmp) {
@@ -538,7 +538,7 @@ void alloc_picture(void *userdata) {
 int queue_picture(VideoState *is, AVFrame *pFrame, double pts) {
 
   VideoPicture *vp;
-  int dst_pix_fmt;
+  //int dst_pix_fmt;
   AVPicture pict;
 
   /* wait until we have space for a new pic */
@@ -586,7 +586,7 @@ int queue_picture(VideoState *is, AVFrame *pFrame, double pts) {
 
     SDL_LockYUVOverlay(vp->bmp);
     
-    dst_pix_fmt = PIX_FMT_YUV420P;
+    //dst_pix_fmt = PIX_FMT_YUV420P;
     /* point pict at the queue */
 
     pict.data[0] = vp->bmp->pixels[0];
@@ -663,7 +663,7 @@ void our_release_buffer(struct AVCodecContext *c, AVFrame *pic) {
 int video_thread(void *arg) {
   VideoState *is = (VideoState *)arg;
   AVPacket pkt1, *packet = &pkt1;
-  int len1, frameFinished;
+  int frameFinished;
   AVFrame *pFrame;
   double pts;
 
@@ -683,7 +683,7 @@ int video_thread(void *arg) {
     // Save global pts to be stored in pFrame in first call
     global_video_pkt_pts = packet->pts;
     // Decode video frame
-    len1 = avcodec_decode_video2(is->video_st->codec, pFrame, &frameFinished, 
+    avcodec_decode_video2(is->video_st->codec, pFrame, &frameFinished, 
 				packet);
     if(packet->dts == AV_NOPTS_VALUE 
        && pFrame->opaque && *(uint64_t*)pFrame->opaque != AV_NOPTS_VALUE) {
@@ -793,7 +793,7 @@ int stream_component_open(VideoState *is, int stream_index) {
     break;
   }
 
-
+  return 0;
 }
 
 int decode_interrupt_cb(void *opaque) {
@@ -940,7 +940,7 @@ void stream_seek(VideoState *is, int64_t pos, int rel) {
 int main(int argc, char *argv[]) {
 
   SDL_Event       event;
-  double          pts;
+  //double          pts;
   VideoState      *is;
 
   is = av_mallocz(sizeof(VideoState));
@@ -983,7 +983,7 @@ int main(int argc, char *argv[]) {
   }
 
   av_init_packet(&flush_pkt);
-  flush_pkt.data = "FLUSH";
+  flush_pkt.data = (unsigned char *)"FLUSH";
   
   for(;;) {
     double incr, pos;
