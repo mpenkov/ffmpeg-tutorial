@@ -878,7 +878,7 @@ int decode_thread(void *arg) {
       if(stream_index>=0){
 	seek_target= av_rescale_q(seek_target, AV_TIME_BASE_Q, pFormatCtx->streams[stream_index]->time_base);
       }
-      if(!av_seek_frame(is->pFormatCtx, stream_index, seek_target, is->seek_flags)) {
+      if(av_seek_frame(is->pFormatCtx, stream_index, seek_target, is->seek_flags) < 0) {
 	fprintf(stderr, "%s: error while seeking\n", is->pFormatCtx->filename);
       } else {
 	if(is->audioStream >= 0) {
