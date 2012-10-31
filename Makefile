@@ -7,8 +7,6 @@ CFLAGS=-Wall -ggdb
 LDFLAGS=`pkg-config --libs libavformat libavcodec libswscale libavutil sdl` -lm
 EXE=tutorial01.out tutorial02.out tutorial03.out tutorial04.out\
 	tutorial05.out tutorial06.out tutorial07.out
-SRC=
-OBJ=$(patsubst %.c,obj/%.o,$(SRC))
 
 #
 # This is here to prevent Make from deleting secondary files.
@@ -29,8 +27,8 @@ dirs:
 tags: *.c
 	ctags *.c
 
-bin/%.out: obj/%.o $(OBJ)
-	$(CC) $(CFLAGS) $< $(OBJ) $(LDFLAGS) -o $@
+bin/%.out: obj/%.o
+	$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
 
 obj/%.o : %.c
 	$(CC) $(CFLAGS) $< $(INCLUDES) -c -o $@
