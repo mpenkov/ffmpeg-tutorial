@@ -3,15 +3,16 @@ ffmpeg-tutorial
 
 This repository contains files from an FFmpeg tutorial originally written by
 Stephen Dranger (dranger@gmail.com).  The files have been updated to work with
-the most recent version of FFmpeg (N-48241-g9e04e11 at the time of writing).
+the most recent version of FFmpeg (see VERSION.txt for the most recent version 
+at the time of writing).
 The updates were performed with an effort to modify as little code as possible,
 so that the original code and tutorial descriptions could be easily consulted.
 
 The code from the original tutorial and the accompanying description is located
 [here](http://dranger.com/ffmpeg/).
 
-Main changes:
--------------
+Main changes
+------------
 
 * Renamed includes, e.g. ffmpeg/avcodec.h --> libavcodec/avcodec.h
 * Work around deprecated functions and symbols (see below)
@@ -56,6 +57,7 @@ that you build FFmpeg from source as described in
 
 To build the tutorials:
 
+    git clone git@github.com:mpenkov/ffmpeg-tutorial.git
     cd ffmpeg-tutorial
     make
 
