@@ -57,7 +57,7 @@ that you build FFmpeg from source as described in
 
 To build the tutorials:
 
-    git clone git@github.com:mpenkov/ffmpeg-tutorial.git
+    git clone git@github.com:chelyaev/ffmpeg-tutorial.git
     cd ffmpeg-tutorial
     make
 
