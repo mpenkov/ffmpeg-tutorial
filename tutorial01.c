@@ -1,8 +1,6 @@
 // tutorial01.c
 //
-// This tutorial was written by Stephen Dranger (dranger@gmail.com) and updated
-// for ffmpeg version N-42806-gf4451d2 by Michael Penkov 
-// (misha.penkov@gmail.com). 
+// This tutorial was written by Stephen Dranger (dranger@gmail.com).
 //
 // Code based on a tutorial by Martin Bohme (boehme@inb.uni-luebeckREMOVETHIS.de)
 // Tested on Gentoo, CVS version 5/01/07 compiled with GCC 4.1.1
