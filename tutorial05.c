@@ -19,6 +19,7 @@
 #include <libavformat/avio.h>
 #include <libswscale/swscale.h>
 #include <libavutil/avstring.h>
+#include <libavutil/time.h>
 
 #include <SDL.h>
 #include <SDL_thread.h>
