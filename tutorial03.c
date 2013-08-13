@@ -30,6 +30,7 @@
 #include <stdio.h>
 
 #define SDL_AUDIO_BUFFER_SIZE 1024
+#define MAX_AUDIO_FRAME_SIZE 192000
 
 typedef struct PacketQueue {
   AVPacketList *first_pkt, *last_pkt;
@@ -171,7 +172,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
   AVCodecContext *aCodecCtx = (AVCodecContext *)userdata;
   int len1, audio_size;
 
-  static uint8_t audio_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
+  static uint8_t audio_buf[(MAX_AUDIO_FRAME_SIZE * 3) / 2];
   static unsigned int audio_buf_size = 0;
   static unsigned int audio_buf_index = 0;
 

@@ -31,6 +31,7 @@
 #include <math.h>
 
 #define SDL_AUDIO_BUFFER_SIZE 1024
+#define MAX_AUDIO_FRAME_SIZE 192000
 
 #define MAX_AUDIOQ_SIZE (5 * 16 * 1024)
 #define MAX_VIDEOQ_SIZE (5 * 256 * 1024)
@@ -78,7 +79,7 @@ typedef struct VideoState {
   AVStream        *audio_st;
   PacketQueue     audioq;
   AVFrame         audio_frame;
-  uint8_t         audio_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
+  uint8_t         audio_buf[(MAX_AUDIO_FRAME_SIZE * 3) / 2];
   unsigned int    audio_buf_size;
   unsigned int    audio_buf_index;
   AVPacket        audio_pkt;
