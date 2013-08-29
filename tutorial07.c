@@ -723,6 +723,8 @@ int stream_component_open(VideoState *is, int stream_index) {
   codecCtx = pFormatCtx->streams[stream_index]->codec;
 
   if(codecCtx->codec_type == AVMEDIA_TYPE_AUDIO) {
+   //fixes audio glitch in FFMPEG
+    codecCtx->request_sample_fmt = AV_SAMPLE_FMT_S16;
     // Set audio settings from codec info
     wanted_spec.freq = codecCtx->sample_rate;
     wanted_spec.format = AUDIO_S16SYS;
