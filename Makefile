@@ -8,12 +8,6 @@ LDFLAGS:=$(shell pkg-config --libs libavformat libavcodec libswscale libavutil s
 EXE:=tutorial01.out tutorial02.out tutorial03.out tutorial04.out\
 	tutorial05.out tutorial06.out tutorial07.out
 
-CFLAGS+=-D__RESAMPLER__ -D__LIBAVRESAMPLE__
-LDFLAGS+=$(shell pkg-config --libs libavresample)
-
-# CFLAGS+=-D__RESAMPLER__ -D__LIBSWRESAMPLE__
-# LDFLAGS+=$(shell pkg-config --libs libswresample)
-
 #
 # This is here to prevent Make from deleting secondary files.
 #
