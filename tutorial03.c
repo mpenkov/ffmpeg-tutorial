@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
     return -1; // Could not open codec
   
   // Allocate video frame
-  pFrame=avcodec_alloc_frame();
+  pFrame=av_frame_alloc();
 
   // Make a screen to put our video
 

@@ -442,7 +442,7 @@ int video_thread(void *arg) {
   int frameFinished;
   AVFrame *pFrame;
 
-  pFrame = avcodec_alloc_frame();
+  pFrame = av_frame_alloc();
 
   for(;;) {
     if(packet_queue_get(&is->videoq, packet, 1) < 0) {
