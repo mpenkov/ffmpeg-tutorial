@@ -545,7 +545,7 @@ int video_thread(void *arg) {
   AVFrame *pFrame;
   double pts;
 
-  pFrame = avcodec_alloc_frame();
+  pFrame = av_frame_alloc();
 
   for(;;) {
     if(packet_queue_get(&is->videoq, packet, 1) < 0) {
@@ -653,7 +653,7 @@ int stream_component_open(VideoState *is, int stream_index) {
             NULL, 
             NULL
         );
-    codecCtx->get_buffer = our_get_buffer;
+    codecCtx->get_buffer2 = our_get_buffer;
     codecCtx->release_buffer = our_release_buffer;
     break;
   default:
