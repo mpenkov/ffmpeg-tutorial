@@ -22,6 +22,9 @@
 #include <libavformat/avio.h>
 #include <libswscale/swscale.h>
 #include <libavutil/avstring.h>
+#if (LIBAVCODEC_VERSION_MAJOR<54)
+  #define av_frame_alloc avcodec_alloc_frame
+#endif
 
 #include <SDL.h>
 #include <SDL_thread.h>

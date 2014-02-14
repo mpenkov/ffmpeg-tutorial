@@ -20,6 +20,9 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
+#if (LIBAVCODEC_VERSION_MAJOR<54)
+  #define av_frame_alloc avcodec_alloc_frame
+#endif
 
 #include <stdio.h>
 
