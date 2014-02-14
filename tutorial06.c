@@ -19,7 +19,11 @@
 #include <libavformat/avio.h>
 #include <libswscale/swscale.h>
 #include <libavutil/avstring.h>
-#include <libavutil/time.h>
+#if (LIBAVCODEC_VERSION_MAJOR<54)
+  #define av_frame_alloc avcodec_alloc_frame
+#else
+  #include <libavutil/time.h>
+#endif
 
 #include <SDL.h>
 #include <SDL_thread.h>
@@ -771,7 +775,11 @@ int stream_component_open(VideoState *is, int stream_index) {
             NULL, 
             NULL
         );
+#if (LIBAVCODEC_VERSION_MAJOR<54)
+    codecCtx->get_buffer = our_get_buffer;
+#else
     codecCtx->get_buffer2 = our_get_buffer;
+#endif
     codecCtx->release_buffer = our_release_buffer;
     break;
   default:
