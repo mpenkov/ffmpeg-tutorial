@@ -143,6 +143,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     if (!q->last_pkt)
         q->first_pkt = pkt1;
+
     else
         q->last_pkt->next = pkt1;
 
@@ -182,9 +183,11 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
             av_free(pkt1);
             ret = 1;
             break;
+
         } else if (!block) {
             ret = 0;
             break;
+
         } else {
             SDL_CondWait(q->cond, q->mutex);
         }
@@ -241,8 +244,10 @@ double get_external_clock(VideoState *is) {
 double get_master_clock(VideoState *is) {
     if(is->av_sync_type == AV_SYNC_VIDEO_MASTER) {
         return get_video_clock(is);
+
     } else if(is->av_sync_type == AV_SYNC_AUDIO_MASTER) {
         return get_audio_clock(is);
+
     } else {
         return get_external_clock(is);
     }
@@ -270,6 +275,7 @@ int synchronize_audio(VideoState *is, short *samples,
 
             if(is->audio_diff_avg_count < AUDIO_DIFF_AVG_NB) {
                 is->audio_diff_avg_count++;
+
             } else {
                 avg_diff = is->audio_diff_cum * (1.0 - is->audio_diff_avg_coef);
 
@@ -280,6 +286,7 @@ int synchronize_audio(VideoState *is, short *samples,
 
                     if(wanted_size < min_size) {
                         wanted_size = min_size;
+
                     } else if (wanted_size > max_size) {
                         wanted_size = max_size;
                     }
@@ -287,6 +294,7 @@ int synchronize_audio(VideoState *is, short *samples,
                     if(wanted_size < samples_size) {
                         /* remove samples */
                         samples_size = wanted_size;
+
                     } else if(wanted_size > samples_size) {
                         uint8_t *samples_end, *q;
                         int nb;
@@ -306,6 +314,7 @@ int synchronize_audio(VideoState *is, short *samples,
                     }
                 }
             }
+
         } else {
             /* difference is TOO big; reset diff stuff */
             is->audio_diff_avg_count = 0;
@@ -407,6 +416,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
                 /* If error, output silence */
                 is->audio_buf_size = 1024;
                 memset(is->audio_buf, 0, is->audio_buf_size);
+
             } else {
                 audio_size = synchronize_audio(is, (int16_t *)is->audio_buf,
                                                audio_size, pts);
@@ -455,6 +465,7 @@ void video_display(VideoState *is) {
     if(vp->bmp) {
         if(is->video_st->codec->sample_aspect_ratio.num == 0) {
             aspect_ratio = 0;
+
         } else {
             aspect_ratio = av_q2d(is->video_st->codec->sample_aspect_ratio) *
                            is->video_st->codec->width / is->video_st->codec->height;
@@ -493,6 +504,7 @@ void video_refresh_timer(void *userdata) {
     if(is->video_st) {
         if(is->pictq_size == 0) {
             schedule_refresh(is, 1);
+
         } else {
             vp = &is->pictq[is->pictq_rindex];
 
@@ -522,6 +534,7 @@ void video_refresh_timer(void *userdata) {
                 if(fabs(diff) < AV_NOSYNC_THRESHOLD) {
                     if(diff <= -sync_threshold) {
                         delay = 0;
+
                     } else if(diff >= sync_threshold) {
                         delay = 2 * delay;
                     }
@@ -552,6 +565,7 @@ void video_refresh_timer(void *userdata) {
             SDL_CondSignal(is->pictq_cond);
             SDL_UnlockMutex(is->pictq_mutex);
         }
+
     } else {
         schedule_refresh(is, 100);
     }
@@ -687,6 +701,7 @@ double synchronize_video(VideoState *is, AVFrame *src_frame, double pts) {
     if(pts != 0) {
         /* if we have pts, set video clock to it */
         is->video_clock = pts;
+
     } else {
         /* if we aren't given a pts, set it to the clock */
         pts = is->video_clock;
@@ -750,8 +765,10 @@ int video_thread(void *arg) {
         if(packet->dts == AV_NOPTS_VALUE
                 && pFrame->opaque && *(uint64_t*)pFrame->opaque != AV_NOPTS_VALUE) {
             pts = *(uint64_t *)pFrame->opaque;
+
         } else if(packet->dts != AV_NOPTS_VALUE) {
             pts = packet->dts;
+
         } else {
             pts = 0;
         }
@@ -949,6 +966,7 @@ int decode_thread(void *arg) {
             int64_t seek_target = is->seek_pos;
 
             if     (is->videoStream >= 0) stream_index = is->videoStream;
+
             else if(is->audioStream >= 0) stream_index = is->audioStream;
 
             if(stream_index>=0) {
@@ -957,6 +975,7 @@ int decode_thread(void *arg) {
 
             if(av_seek_frame(is->pFormatCtx, stream_index, seek_target, is->seek_flags) < 0) {
                 fprintf(stderr, "%s: error while seeking\n", is->pFormatCtx->filename);
+
             } else {
                 if(is->audioStream >= 0) {
                     packet_queue_flush(&is->audioq);
@@ -982,6 +1001,7 @@ int decode_thread(void *arg) {
             if(is->pFormatCtx->pb->error == 0) {
                 SDL_Delay(100); /* no error; wait for user input */
                 continue;
+
             } else {
                 break;
             }
@@ -990,8 +1010,10 @@ int decode_thread(void *arg) {
         // Is this a packet from the video stream?
         if(packet->stream_index == is->videoStream) {
             packet_queue_put(&is->videoq, packet);
+
         } else if(packet->stream_index == is->audioStream) {
             packet_queue_put(&is->audioq, packet);
+
         } else {
             av_free_packet(packet);
         }

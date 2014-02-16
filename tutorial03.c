@@ -70,6 +70,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     if (!q->last_pkt)
         q->first_pkt = pkt1;
+
     else
         q->last_pkt->next = pkt1;
 
@@ -109,9 +110,11 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
             av_free(pkt1);
             ret = 1;
             break;
+
         } else if (!block) {
             ret = 0;
             break;
+
         } else {
             SDL_CondWait(q->cond, q->mutex);
         }
@@ -201,6 +204,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
                 /* If error, output silence */
                 audio_buf_size = 1024; // arbitrary?
                 memset(audio_buf, 0, audio_buf_size);
+
             } else {
                 audio_buf_size = audio_size;
             }
@@ -413,8 +417,10 @@ int main(int argc, char *argv[]) {
                 SDL_DisplayYUVOverlay(bmp, &rect);
                 av_free_packet(&packet);
             }
+
         } else if(packet.stream_index==audioStream) {
             packet_queue_put(&audioq, &packet);
+
         } else {
             av_free_packet(&packet);
         }

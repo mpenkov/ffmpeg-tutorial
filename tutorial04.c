@@ -122,6 +122,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     if (!q->last_pkt)
         q->first_pkt = pkt1;
+
     else
         q->last_pkt->next = pkt1;
 
@@ -161,9 +162,11 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
             av_free(pkt1);
             ret = 1;
             break;
+
         } else if (!block) {
             ret = 0;
             break;
+
         } else {
             SDL_CondWait(q->cond, q->mutex);
         }
@@ -245,6 +248,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
                 /* If error, output silence */
                 is->audio_buf_size = 1024;
                 memset(is->audio_buf, 0, is->audio_buf_size);
+
             } else {
                 is->audio_buf_size = audio_size;
             }
@@ -291,6 +295,7 @@ void video_display(VideoState *is) {
     if(vp->bmp) {
         if(is->video_st->codec->sample_aspect_ratio.num == 0) {
             aspect_ratio = 0;
+
         } else {
             aspect_ratio = av_q2d(is->video_st->codec->sample_aspect_ratio) *
                            is->video_st->codec->width / is->video_st->codec->height;
@@ -329,6 +334,7 @@ void video_refresh_timer(void *userdata) {
     if(is->video_st) {
         if(is->pictq_size == 0) {
             schedule_refresh(is, 1);
+
         } else {
             //vp = &is->pictq[is->pictq_rindex];
             /* Now, normally here goes a ton of code
@@ -353,6 +359,7 @@ void video_refresh_timer(void *userdata) {
             SDL_CondSignal(is->pictq_cond);
             SDL_UnlockMutex(is->pictq_mutex);
         }
+
     } else {
         schedule_refresh(is, 100);
     }
@@ -674,6 +681,7 @@ int decode_thread(void *arg) {
             if(is->pFormatCtx->pb->error == 0) {
                 SDL_Delay(100); /* no error; wait for user input */
                 continue;
+
             } else {
                 break;
             }
@@ -682,8 +690,10 @@ int decode_thread(void *arg) {
         // Is this a packet from the video stream?
         if(packet->stream_index == is->videoStream) {
             packet_queue_put(&is->videoq, packet);
+
         } else if(packet->stream_index == is->audioStream) {
             packet_queue_put(&is->audioq, packet);
+
         } else {
             av_free_packet(packet);
         }
