@@ -813,53 +813,53 @@ int stream_component_open(VideoState *is, int stream_index) {
     }
 
     switch(codecCtx->codec_type) {
-    case AVMEDIA_TYPE_AUDIO:
-        is->audioStream = stream_index;
-        is->audio_st = pFormatCtx->streams[stream_index];
-        is->audio_buf_size = 0;
-        is->audio_buf_index = 0;
+        case AVMEDIA_TYPE_AUDIO:
+            is->audioStream = stream_index;
+            is->audio_st = pFormatCtx->streams[stream_index];
+            is->audio_buf_size = 0;
+            is->audio_buf_index = 0;
 
-        /* averaging filter for audio sync */
-        is->audio_diff_avg_coef = exp(log(0.01 / AUDIO_DIFF_AVG_NB));
-        is->audio_diff_avg_count = 0;
-        /* Correct audio only if larger error than this */
-        is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / codecCtx->sample_rate;
+            /* averaging filter for audio sync */
+            is->audio_diff_avg_coef = exp(log(0.01 / AUDIO_DIFF_AVG_NB));
+            is->audio_diff_avg_count = 0;
+            /* Correct audio only if larger error than this */
+            is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / codecCtx->sample_rate;
 
-        memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
-        packet_queue_init(&is->audioq);
-        SDL_PauseAudio(0);
-        break;
+            memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
+            packet_queue_init(&is->audioq);
+            SDL_PauseAudio(0);
+            break;
 
-    case AVMEDIA_TYPE_VIDEO:
-        is->videoStream = stream_index;
-        is->video_st = pFormatCtx->streams[stream_index];
+        case AVMEDIA_TYPE_VIDEO:
+            is->videoStream = stream_index;
+            is->video_st = pFormatCtx->streams[stream_index];
 
-        is->frame_timer = (double)av_gettime() / 1000000.0;
-        is->frame_last_delay = 40e-3;
-        is->video_current_pts_time = av_gettime();
+            is->frame_timer = (double)av_gettime() / 1000000.0;
+            is->frame_last_delay = 40e-3;
+            is->video_current_pts_time = av_gettime();
 
-        packet_queue_init(&is->videoq);
-        is->video_tid = SDL_CreateThread(video_thread, is);
-        is->sws_ctx =
-            sws_getContext
-            (
-                is->video_st->codec->width,
-                is->video_st->codec->height,
-                is->video_st->codec->pix_fmt,
-                is->video_st->codec->width,
-                is->video_st->codec->height,
-                PIX_FMT_YUV420P,
-                SWS_BILINEAR,
-                NULL,
-                NULL,
-                NULL
-            );
-        codecCtx->get_buffer = our_get_buffer;
-        codecCtx->release_buffer = our_release_buffer;
-        break;
+            packet_queue_init(&is->videoq);
+            is->video_tid = SDL_CreateThread(video_thread, is);
+            is->sws_ctx =
+                sws_getContext
+                (
+                    is->video_st->codec->width,
+                    is->video_st->codec->height,
+                    is->video_st->codec->pix_fmt,
+                    is->video_st->codec->width,
+                    is->video_st->codec->height,
+                    PIX_FMT_YUV420P,
+                    SWS_BILINEAR,
+                    NULL,
+                    NULL,
+                    NULL
+                );
+            codecCtx->get_buffer = our_get_buffer;
+            codecCtx->release_buffer = our_release_buffer;
+            break;
 
-    default:
-        break;
+        default:
+            break;
     }
 
     return 0;
@@ -1040,30 +1040,30 @@ int main(int argc, char *argv[]) {
         SDL_WaitEvent(&event);
 
         switch(event.type) {
-        case FF_QUIT_EVENT:
-        case SDL_QUIT:
-            is->quit = 1;
-            /*
-             * If the video has finished playing, then both the picture and
-             * audio queues are waiting for more data.  Make them stop
-             * waiting and terminate normally.
-             */
-            SDL_CondSignal(is->audioq.cond);
-            SDL_CondSignal(is->videoq.cond);
-            SDL_Quit();
-            exit(0);
-            break;
+            case FF_QUIT_EVENT:
+            case SDL_QUIT:
+                is->quit = 1;
+                /*
+                 * If the video has finished playing, then both the picture and
+                 * audio queues are waiting for more data.  Make them stop
+                 * waiting and terminate normally.
+                 */
+                SDL_CondSignal(is->audioq.cond);
+                SDL_CondSignal(is->videoq.cond);
+                SDL_Quit();
+                exit(0);
+                break;
 
-        case FF_ALLOC_EVENT:
-            alloc_picture(event.user.data1);
-            break;
+            case FF_ALLOC_EVENT:
+                alloc_picture(event.user.data1);
+                break;
 
-        case FF_REFRESH_EVENT:
-            video_refresh_timer(event.user.data1);
-            break;
+            case FF_REFRESH_EVENT:
+                video_refresh_timer(event.user.data1);
+                break;
 
-        default:
-            break;
+            default:
+                break;
         }
     }
 
