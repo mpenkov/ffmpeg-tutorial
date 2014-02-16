@@ -54,7 +54,6 @@ typedef struct PacketQueue {
     SDL_cond *cond;
 } PacketQueue;
 
-
 typedef struct VideoPicture {
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
@@ -111,6 +110,7 @@ void packet_queue_init(PacketQueue *q) {
     q->mutex = SDL_CreateMutex();
     q->cond = SDL_CreateCond();
 }
+
 int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     AVPacketList *pkt1;
@@ -146,6 +146,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
     SDL_UnlockMutex(q->mutex);
     return 0;
 }
+
 static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
     AVPacketList *pkt1;
     int ret;
@@ -187,6 +188,7 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
     SDL_UnlockMutex(q->mutex);
     return ret;
 }
+
 double get_audio_clock(VideoState *is) {
     double pts;
     int hw_buf_size, bytes_per_sec, n;
@@ -596,6 +598,7 @@ int our_get_buffer(struct AVCodecContext *c, AVFrame *pic) {
     pic->opaque = pts;
     return ret;
 }
+
 void our_release_buffer(struct AVCodecContext *c, AVFrame *pic) {
     if(pic) {
         av_freep(&pic->opaque);

@@ -50,6 +50,7 @@ typedef struct PacketQueue {
     SDL_mutex *mutex;
     SDL_cond *cond;
 } PacketQueue;
+
 typedef struct VideoPicture {
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
@@ -123,6 +124,7 @@ void packet_queue_init(PacketQueue *q) {
     q->mutex = SDL_CreateMutex();
     q->cond = SDL_CreateCond();
 }
+
 int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     AVPacketList *pkt1;
@@ -158,6 +160,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
     SDL_UnlockMutex(q->mutex);
     return 0;
 }
+
 static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
     AVPacketList *pkt1;
     int ret;
@@ -199,6 +202,7 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
     SDL_UnlockMutex(q->mutex);
     return ret;
 }
+
 static void packet_queue_flush(PacketQueue *q) {
     AVPacketList *pkt, *pkt1;
 
@@ -216,6 +220,7 @@ static void packet_queue_flush(PacketQueue *q) {
     q->size = 0;
     SDL_UnlockMutex(q->mutex);
 }
+
 double get_audio_clock(VideoState *is) {
     double pts;
     int hw_buf_size, bytes_per_sec, n;
@@ -235,15 +240,18 @@ double get_audio_clock(VideoState *is) {
 
     return pts;
 }
+
 double get_video_clock(VideoState *is) {
     double delta;
 
     delta = (av_gettime() - is->video_current_pts_time) / 1000000.0;
     return is->video_current_pts + delta;
 }
+
 double get_external_clock(VideoState *is) {
     return av_gettime() / 1000000.0;
 }
+
 double get_master_clock(VideoState *is) {
     if(is->av_sync_type == AV_SYNC_VIDEO_MASTER) {
         return get_video_clock(is);
@@ -255,8 +263,10 @@ double get_master_clock(VideoState *is) {
         return get_external_clock(is);
     }
 }
+
 /* Add or subtract samples to get a better sync, return new
    audio buffer size */
+
 int synchronize_audio(VideoState *is, short *samples,
                       int samples_size, double pts) {
     int n;
@@ -451,6 +461,7 @@ static Uint32 sdl_refresh_timer_cb(Uint32 interval, void *opaque) {
 }
 
 /* schedule a video refresh in 'delay' ms */
+
 static void schedule_refresh(VideoState *is, int delay) {
     SDL_AddTimer(delay, sdl_refresh_timer_cb, is);
 }
@@ -733,6 +744,7 @@ int our_get_buffer(struct AVCodecContext *c, AVFrame *pic) {
     pic->opaque = pts;
     return ret;
 }
+
 void our_release_buffer(struct AVCodecContext *c, AVFrame *pic) {
     if(pic) {
         av_freep(&pic->opaque);
@@ -797,6 +809,7 @@ int video_thread(void *arg) {
     av_free(pFrame);
     return 0;
 }
+
 int stream_component_open(VideoState *is, int stream_index) {
 
     AVFormatContext *pFormatCtx = is->pFormatCtx;
@@ -894,6 +907,7 @@ int stream_component_open(VideoState *is, int stream_index) {
 int decode_interrupt_cb(void *opaque) {
     return (global_video_state && global_video_state->quit);
 }
+
 int decode_thread(void *arg) {
 
     VideoState *is = (VideoState *)arg;
@@ -1053,6 +1067,7 @@ void stream_seek(VideoState *is, int64_t pos, int rel) {
         is->seek_req = 1;
     }
 }
+
 int main(int argc, char *argv[]) {
 
     SDL_Event       event;
