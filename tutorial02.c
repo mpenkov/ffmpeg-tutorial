@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: test <file>\n");
         exit(1);
     }
+
     // Register all formats and codecs
     av_register_all();
 
@@ -71,11 +72,13 @@ int main(int argc, char *argv[]) {
 
     // Find the first video stream
     videoStream=-1;
+
     for(i=0; i<pFormatCtx->nb_streams; i++)
         if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
             videoStream=i;
             break;
         }
+
     if(videoStream==-1)
         return -1; // Didn't find a video stream
 
@@ -84,6 +87,7 @@ int main(int argc, char *argv[]) {
 
     // Find the decoder for the video stream
     pCodec=avcodec_find_decoder(pCodecCtx->codec_id);
+
     if(pCodec==NULL) {
         fprintf(stderr, "Unsupported codec!\n");
         return -1; // Codec not found
@@ -102,6 +106,7 @@ int main(int argc, char *argv[]) {
 #else
     screen = SDL_SetVideoMode(pCodecCtx->width, pCodecCtx->height, 24, 0);
 #endif
+
     if(!screen) {
         fprintf(stderr, "SDL: could not set video mode - exiting\n");
         exit(1);
@@ -130,6 +135,7 @@ int main(int argc, char *argv[]) {
 
     // Read frames and save first five frames to disk
     i=0;
+
     while(av_read_frame(pFormatCtx, &packet)>=0) {
         // Is this a packet from the video stream?
         if(packet.stream_index==videoStream) {
@@ -176,11 +182,13 @@ int main(int argc, char *argv[]) {
         // Free the packet that was allocated by av_read_frame
         av_free_packet(&packet);
         SDL_PollEvent(&event);
+
         switch(event.type) {
         case SDL_QUIT:
             SDL_Quit();
             exit(0);
             break;
+
         default:
             break;
         }

@@ -31,6 +31,7 @@ void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame) {
     // Open file
     sprintf(szFilename, "frame%d.ppm", iFrame);
     pFile=fopen(szFilename, "wb");
+
     if(pFile==NULL)
         return;
 
@@ -64,6 +65,7 @@ int main(int argc, char *argv[]) {
         printf("Please provide a movie file\n");
         return -1;
     }
+
     // Register all formats and codecs
     av_register_all();
 
@@ -80,11 +82,13 @@ int main(int argc, char *argv[]) {
 
     // Find the first video stream
     videoStream=-1;
+
     for(i=0; i<pFormatCtx->nb_streams; i++)
         if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
             videoStream=i;
             break;
         }
+
     if(videoStream==-1)
         return -1; // Didn't find a video stream
 
@@ -93,10 +97,12 @@ int main(int argc, char *argv[]) {
 
     // Find the decoder for the video stream
     pCodec=avcodec_find_decoder(pCodecCtx->codec_id);
+
     if(pCodec==NULL) {
         fprintf(stderr, "Unsupported codec!\n");
         return -1; // Codec not found
     }
+
     // Open codec
     if(avcodec_open2(pCodecCtx, pCodec, &optionsDict)<0)
         return -1; // Could not open codec
@@ -106,6 +112,7 @@ int main(int argc, char *argv[]) {
 
     // Allocate an AVFrame structure
     pFrameRGB=avcodec_alloc_frame();
+
     if(pFrameRGB==NULL)
         return -1;
 
@@ -137,6 +144,7 @@ int main(int argc, char *argv[]) {
 
     // Read frames and save first five frames to disk
     i=0;
+
     while(av_read_frame(pFormatCtx, &packet)>=0) {
         // Is this a packet from the video stream?
         if(packet.stream_index==videoStream) {
