@@ -59,8 +59,9 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     pkt1 = av_malloc(sizeof(AVPacketList));
 
-    if (!pkt1)
+    if (!pkt1) {
         return -1;
+    }
 
     pkt1->pkt = *pkt;
     pkt1->next = NULL;
@@ -68,11 +69,13 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     SDL_LockMutex(q->mutex);
 
-    if (!q->last_pkt)
+    if (!q->last_pkt) {
         q->first_pkt = pkt1;
+    }
 
-    else
+    else {
         q->last_pkt->next = pkt1;
+    }
 
     q->last_pkt = pkt1;
     q->nb_packets++;
@@ -101,8 +104,9 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
         if (pkt1) {
             q->first_pkt = pkt1->next;
 
-            if (!q->first_pkt)
+            if (!q->first_pkt) {
                 q->last_pkt = NULL;
+            }
 
             q->nb_packets--;
             q->size -= pkt1->pkt.size;
@@ -170,8 +174,9 @@ int audio_decode_frame(AVCodecContext *aCodecCtx, uint8_t *audio_buf, int buf_si
             return data_size;
         }
 
-        if(pkt.data)
+        if(pkt.data) {
             av_free_packet(&pkt);
+        }
 
         if(quit) {
             return -1;
@@ -214,8 +219,9 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
 
         len1 = audio_buf_size - audio_buf_index;
 
-        if(len1 > len)
+        if(len1 > len) {
             len1 = len;
+        }
 
         memcpy(stream, (uint8_t *)audio_buf + audio_buf_index, len1);
         len -= len1;
@@ -261,12 +267,14 @@ int main(int argc, char *argv[]) {
     }
 
     // Open video file
-    if(avformat_open_input(&pFormatCtx, argv[1], NULL, NULL)!=0)
-        return -1; // Couldn't open file
+    if(avformat_open_input(&pFormatCtx, argv[1], NULL, NULL)!=0) {
+        return -1;    // Couldn't open file
+    }
 
     // Retrieve stream information
-    if(avformat_find_stream_info(pFormatCtx, NULL)<0)
-        return -1; // Couldn't find stream information
+    if(avformat_find_stream_info(pFormatCtx, NULL)<0) {
+        return -1;    // Couldn't find stream information
+    }
 
     // Dump information about file onto standard error
     av_dump_format(pFormatCtx, 0, argv[1], 0);
@@ -287,11 +295,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if(videoStream==-1)
-        return -1; // Didn't find a video stream
+    if(videoStream==-1) {
+        return -1;    // Didn't find a video stream
+    }
 
-    if(audioStream==-1)
+    if(audioStream==-1) {
         return -1;
+    }
 
     aCodecCtx=pFormatCtx->streams[audioStream]->codec;
     // Set audio settings from codec info
@@ -333,8 +343,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Open codec
-    if(avcodec_open2(pCodecCtx, pCodec, &videoOptionsDict)<0)
-        return -1; // Could not open codec
+    if(avcodec_open2(pCodecCtx, pCodec, &videoOptionsDict)<0) {
+        return -1;    // Could not open codec
+    }
 
     // Allocate video frame
     pFrame=avcodec_alloc_frame();

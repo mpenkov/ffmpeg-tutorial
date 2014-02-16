@@ -142,19 +142,22 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     pkt1 = av_malloc(sizeof(AVPacketList));
 
-    if (!pkt1)
+    if (!pkt1) {
         return -1;
+    }
 
     pkt1->pkt = *pkt;
     pkt1->next = NULL;
 
     SDL_LockMutex(q->mutex);
 
-    if (!q->last_pkt)
+    if (!q->last_pkt) {
         q->first_pkt = pkt1;
+    }
 
-    else
+    else {
         q->last_pkt->next = pkt1;
+    }
 
     q->last_pkt = pkt1;
     q->nb_packets++;
@@ -183,8 +186,9 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
         if (pkt1) {
             q->first_pkt = pkt1->next;
 
-            if (!q->first_pkt)
+            if (!q->first_pkt) {
                 q->last_pkt = NULL;
+            }
 
             q->nb_packets--;
             q->size -= pkt1->pkt.size;
@@ -367,8 +371,9 @@ int audio_decode_frame(VideoState *is, double *pts_ptr) {
             return data_size;
         }
 
-        if(pkt->data)
+        if(pkt->data) {
             av_free_packet(pkt);
+        }
 
         if(is->quit) {
             return -1;
@@ -416,8 +421,9 @@ void audio_callback(void *userdata, Uint8 *stream, int len) {
 
         len1 = is->audio_buf_size - is->audio_buf_index;
 
-        if(len1 > len)
+        if(len1 > len) {
             len1 = len;
+        }
 
         memcpy(stream, (uint8_t *)is->audio_buf + is->audio_buf_index, len1);
         len -= len1;
@@ -601,8 +607,9 @@ int queue_picture(VideoState *is, AVFrame *pFrame, double pts) {
 
     SDL_UnlockMutex(is->pictq_mutex);
 
-    if(is->quit)
+    if(is->quit) {
         return -1;
+    }
 
     // windex is set to 0 initially
     vp = &is->pictq[is->pictq_windex];
@@ -715,7 +722,9 @@ int our_get_buffer(struct AVCodecContext *c, AVFrame *pic) {
     return ret;
 }
 void our_release_buffer(struct AVCodecContext *c, AVFrame *pic) {
-    if(pic) av_freep(&pic->opaque);
+    if(pic) {
+        av_freep(&pic->opaque);
+    }
 
     avcodec_default_release_buffer(c, pic);
 }
@@ -897,14 +906,16 @@ int decode_thread(void *arg) {
     }
 
     // Open video file
-    if(avformat_open_input(&pFormatCtx, is->filename, NULL, NULL)!=0)
-        return -1; // Couldn't open file
+    if(avformat_open_input(&pFormatCtx, is->filename, NULL, NULL)!=0) {
+        return -1;    // Couldn't open file
+    }
 
     is->pFormatCtx = pFormatCtx;
 
     // Retrieve stream information
-    if(avformat_find_stream_info(pFormatCtx, NULL)<0)
-        return -1; // Couldn't find stream information
+    if(avformat_find_stream_info(pFormatCtx, NULL)<0) {
+        return -1;    // Couldn't find stream information
+    }
 
     // Dump information about file onto standard error
     av_dump_format(pFormatCtx, 0, is->filename, 0);

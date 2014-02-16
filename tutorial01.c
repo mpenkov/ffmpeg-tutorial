@@ -32,15 +32,17 @@ void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame) {
     sprintf(szFilename, "frame%d.ppm", iFrame);
     pFile=fopen(szFilename, "wb");
 
-    if(pFile==NULL)
+    if(pFile==NULL) {
         return;
+    }
 
     // Write header
     fprintf(pFile, "P6\n%d %d\n255\n", width, height);
 
     // Write pixel data
-    for(y=0; y<height; y++)
+    for(y=0; y<height; y++) {
         fwrite(pFrame->data[0]+y*pFrame->linesize[0], 1, width*3, pFile);
+    }
 
     // Close file
     fclose(pFile);
@@ -70,12 +72,14 @@ int main(int argc, char *argv[]) {
     av_register_all();
 
     // Open video file
-    if(avformat_open_input(&pFormatCtx, argv[1], NULL, NULL)!=0)
-        return -1; // Couldn't open file
+    if(avformat_open_input(&pFormatCtx, argv[1], NULL, NULL)!=0) {
+        return -1;    // Couldn't open file
+    }
 
     // Retrieve stream information
-    if(avformat_find_stream_info(pFormatCtx, NULL)<0)
-        return -1; // Couldn't find stream information
+    if(avformat_find_stream_info(pFormatCtx, NULL)<0) {
+        return -1;    // Couldn't find stream information
+    }
 
     // Dump information about file onto standard error
     av_dump_format(pFormatCtx, 0, argv[1], 0);
@@ -89,8 +93,9 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-    if(videoStream==-1)
-        return -1; // Didn't find a video stream
+    if(videoStream==-1) {
+        return -1;    // Didn't find a video stream
+    }
 
     // Get a pointer to the codec context for the video stream
     pCodecCtx=pFormatCtx->streams[videoStream]->codec;
@@ -104,8 +109,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Open codec
-    if(avcodec_open2(pCodecCtx, pCodec, &optionsDict)<0)
-        return -1; // Could not open codec
+    if(avcodec_open2(pCodecCtx, pCodec, &optionsDict)<0) {
+        return -1;    // Could not open codec
+    }
 
     // Allocate video frame
     pFrame=avcodec_alloc_frame();
@@ -113,8 +119,9 @@ int main(int argc, char *argv[]) {
     // Allocate an AVFrame structure
     pFrameRGB=avcodec_alloc_frame();
 
-    if(pFrameRGB==NULL)
+    if(pFrameRGB==NULL) {
         return -1;
+    }
 
     // Determine required buffer size and allocate buffer
     numBytes=avpicture_get_size(PIX_FMT_RGB24, pCodecCtx->width,
