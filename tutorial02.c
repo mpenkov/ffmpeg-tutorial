@@ -184,13 +184,13 @@ int main(int argc, char *argv[]) {
         SDL_PollEvent(&event);
 
         switch(event.type) {
-            case SDL_QUIT:
-                SDL_Quit();
-                exit(0);
-                break;
+        case SDL_QUIT:
+            SDL_Quit();
+            exit(0);
+            break;
 
-            default:
-                break;
+        default:
+            break;
         }
 
     }
