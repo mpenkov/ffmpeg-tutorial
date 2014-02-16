@@ -167,8 +167,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
     SDL_UnlockMutex(q->mutex);
     return 0;
 }
-static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
-{
+static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
     AVPacketList *pkt1;
     int ret;
 
@@ -339,8 +338,7 @@ int audio_decode_frame(VideoState *is, double *pts_ptr) {
                 break;
             }
 
-            if (got_frame)
-            {
+            if (got_frame) {
                 data_size =
                     av_samples_get_buffer_size
                     (
@@ -899,8 +897,7 @@ int decode_thread(void *arg) {
     callback.callback = decode_interrupt_cb;
     callback.opaque = is;
 
-    if (avio_open2(&is->io_context, is->filename, 0, &callback, &io_dict))
-    {
+    if (avio_open2(&is->io_context, is->filename, 0, &callback, &io_dict)) {
         fprintf(stderr, "Unable to open I/O for %s\n", is->filename);
         return -1;
     }
@@ -988,8 +985,7 @@ int decode_thread(void *arg) {
         SDL_Delay(100);
     }
 
-fail:
-    {
+fail: {
         SDL_Event event;
         event.type = FF_QUIT_EVENT;
         event.user.data1 = is;

@@ -85,8 +85,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
     SDL_UnlockMutex(q->mutex);
     return 0;
 }
-static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block)
-{
+static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
     AVPacketList *pkt1;
     int ret;
 
@@ -151,8 +150,7 @@ int audio_decode_frame(AVCodecContext *aCodecCtx, uint8_t *audio_buf, int buf_si
             audio_pkt_data += len1;
             audio_pkt_size -= len1;
 
-            if (got_frame)
-            {
+            if (got_frame) {
                 data_size =
                     av_samples_get_buffer_size
                     (
