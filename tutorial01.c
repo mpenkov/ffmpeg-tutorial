@@ -114,10 +114,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Allocate video frame
-    pFrame = avcodec_alloc_frame();
+    pFrame = av_frame_alloc();
 
     // Allocate an AVFrame structure
-    pFrameRGB = avcodec_alloc_frame();
+    pFrameRGB = av_frame_alloc();
 
     if(pFrameRGB == NULL) {
         return -1;

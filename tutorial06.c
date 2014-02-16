@@ -718,20 +718,12 @@ uint64_t global_video_pkt_pts = AV_NOPTS_VALUE;
  * buffer. We use this to store the global_pts in
  * a frame at the time it is allocated.
  */
-int our_get_buffer(struct AVCodecContext *c, AVFrame *pic) {
-    int ret = avcodec_default_get_buffer(c, pic);
+int our_get_buffer(struct AVCodecContext *c, AVFrame *pic, int flags) {
+    int ret = avcodec_default_get_buffer2(c, pic, flags);
     uint64_t *pts = av_malloc(sizeof(uint64_t));
     *pts = global_video_pkt_pts;
     pic->opaque = pts;
     return ret;
-}
-
-void our_release_buffer(struct AVCodecContext *c, AVFrame *pic) {
-    if(pic) {
-        av_freep(&pic->opaque);
-    }
-
-    avcodec_default_release_buffer(c, pic);
 }
 
 int video_thread(void *arg) {
@@ -741,7 +733,7 @@ int video_thread(void *arg) {
     AVFrame *pFrame;
     double pts;
 
-    pFrame = avcodec_alloc_frame();
+    pFrame = av_frame_alloc();
 
     for(;;) {
         if(packet_queue_get(&is->videoq, packet, 1) < 0) {
@@ -868,8 +860,7 @@ int stream_component_open(VideoState *is, int stream_index) {
                     NULL,
                     NULL
                 );
-            codecCtx->get_buffer = our_get_buffer;
-            codecCtx->release_buffer = our_release_buffer;
+            codecCtx->get_buffer2 = our_get_buffer;
             break;
 
         default:
