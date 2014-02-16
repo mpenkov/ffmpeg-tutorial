@@ -21,6 +21,18 @@
 #include <libavutil/avstring.h>
 #include <libavutil/time.h>
 
+#ifdef __RESAMPLER__
+#include <libavutil/opt.h>
+
+#ifdef __LIBAVRESAMPLE__
+#include <libavresample/avresample.h>
+#endif
+
+#ifdef __LIBSWRESAMPLE__
+#include <libswresample/swresample.h>
+#endif
+#endif
+
 #include <SDL.h>
 #include <SDL_thread.h>
 
@@ -90,6 +102,7 @@ typedef struct VideoState {
     double          audio_diff_avg_coef;
     double          audio_diff_threshold;
     int             audio_diff_avg_count;
+    uint8_t         audio_need_resample;
     double          frame_timer;
     double          frame_last_pts;
     double          frame_last_delay;
@@ -112,6 +125,20 @@ typedef struct VideoState {
 
     AVIOContext     *io_context;
     struct SwsContext *sws_ctx;
+
+#ifdef __RESAMPLER__
+#ifdef __LIBAVRESAMPLE__
+    AVAudioResampleContext *pSwrCtx;
+#endif
+
+#ifdef __LIBSWRESAMPLE__
+    SwrContext *pSwrCtx;
+#endif
+    uint8_t *pResampledOut;
+    int resample_lines;
+    uint64_t resample_size;
+#endif
+
 } VideoState;
 
 enum {
@@ -153,9 +180,8 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     if(!q->last_pkt) {
         q->first_pkt = pkt1;
-    }
 
-    else {
+    } else {
         q->last_pkt->next = pkt1;
     }
 
@@ -327,6 +353,92 @@ int synchronize_audio(VideoState *is, short *samples,
     return samples_size;
 }
 
+int audio_tutorial_resample(VideoState *is, struct AVFrame *inframe) {
+
+#ifdef __RESAMPLER__
+
+#ifdef __LIBAVRESAMPLE__
+
+// There is pre 1.0 libavresample and then there is above..
+#if LIBAVRESAMPLE_VERSION_MAJOR == 0
+    void **resample_input_bytes = (void **)inframe->extended_data;
+#else
+    uint8_t **resample_input_bytes = (uint8_t **)inframe->extended_data;
+#endif
+
+#else
+    uint8_t **resample_input_bytes = (uint8_t **)inframe->extended_data;
+#endif
+
+
+    int resample_nblen = 0;
+    unsigned int resample_int_bytes = 0;
+
+    if( is->pResampledOut == NULL || inframe->nb_samples > is->resample_size) {
+#if __LIBAVRESAMPLE__
+        is->resample_size = av_rescale_rnd(avresample_get_delay(is->pSwrCtx) +
+                                           inframe->nb_samples,
+                                           44100,
+                                           44100,
+                                           AV_ROUND_UP);
+#else
+        is->resample_size = av_rescale_rnd(swr_get_delay(is->pSwrCtx,
+                                           44100) +
+                                           inframe->nb_samples,
+                                           44100,
+                                           44100,
+                                           AV_ROUND_UP);
+#endif
+
+        if(is->pResampledOut != NULL) {
+            av_free(is->pResampledOut);
+            is->pResampledOut = NULL;
+        }
+
+        av_samples_alloc(&is->pResampledOut, &is->resample_lines, 2, is->resample_size,
+                         AV_SAMPLE_FMT_S16, 0);
+
+    }
+
+
+#ifdef __LIBAVRESAMPLE__
+
+// OLD API (0.0.3) ... still NEW API (1.0.0 and above).. very frustrating..
+// USED IN FFMPEG 1.0 (LibAV SOMETHING!). New in FFMPEG 1.1 and libav 9
+#if LIBAVRESAMPLE_VERSION_INT <= 3
+    // AVResample OLD
+    resample_nblen = avresample_convert(is->pSwrCtx, (void **)&is->pResampledOut, 0,
+                                        is->resample_size,
+                                        (void **)resample_input_bytes, 0, inframe->nb_samples);
+#else
+    //AVResample NEW
+    resample_nblen = avresample_convert(is->pSwrCtx, (uint8_t **)&is->pResampledOut,
+                                        0, is->resample_size,
+                                        (uint8_t **)resample_input_bytes, 0, inframe->nb_samples);
+#endif
+
+#else
+    // SWResample
+    resample_nblen = swr_convert(is->pSwrCtx, (uint8_t **)&is->pResampledOut,
+                                 is->resample_size,
+                                 (const uint8_t **)resample_input_bytes, inframe->nb_samples);
+#endif
+
+    resample_int_bytes = av_samples_get_buffer_size(NULL, 2, resample_nblen,
+                         AV_SAMPLE_FMT_S16, 1);
+
+    if (resample_nblen < 0) {
+        fprintf(stderr, "reSample to another sample format failed!\n");
+        return -1;
+    }
+
+    return resample_int_bytes;
+
+#else
+    return -1;
+#endif
+}
+
 int audio_decode_frame(VideoState *is, double *pts_ptr) {
 
     int len1, data_size = 0, n;
@@ -354,7 +466,25 @@ int audio_decode_frame(VideoState *is, double *pts_ptr) {
                         is->audio_st->codec->sample_fmt,
                         1
                     );
-                memcpy(is->audio_buf, is->audio_frame.data[0], data_size);
+
+#ifdef __RESAMPLER__
+
+                if(is->audio_need_resample == 1) {
+                    resample_size = audio_tutorial_resample(is, &is->audio_frame);
+
+                    if( resample_size > 0 ) {
+                        memcpy(is->audio_buf, is->pResampledOut, resample_size);
+                        memset(is->pResampledOut, 0x00, resample_size);
+                    }
+
+                } else {
+#endif
+
+                    memcpy(is->audio_buf, is->audio_frame.data[0], data_size);
+#ifdef __RESAMPLER__
+                }
+
+#endif
             }
 
             is->audio_pkt_data += len1;
@@ -718,6 +848,7 @@ uint64_t global_video_pkt_pts = AV_NOPTS_VALUE;
  * buffer. We use this to store the global_pts in
  * a frame at the time it is allocated.
  */
+
 int our_get_buffer(struct AVCodecContext *c, AVFrame *pic, int flags) {
     int ret = avcodec_default_get_buffer2(c, pic, flags);
     uint64_t *pts = av_malloc(sizeof(uint64_t));
@@ -889,6 +1020,7 @@ int decode_thread(void *arg) {
 
     is->videoStream = -1;
     is->audioStream = -1;
+    is->audio_need_resample = 0;
 
     global_video_state = is;
     // will interrupt blocking functions if we quit!
@@ -937,10 +1069,76 @@ int decode_thread(void *arg) {
         stream_component_open(is, video_index);
     }
 
-    if(is->videoStream < 0 || is->audioStream < 0) {
+    if(is->videoStream < 0 && is->audioStream < 0) {
         fprintf(stderr, "%s: could not open codecs\n", is->filename);
         goto fail;
     }
+
+#ifdef __RESAMPLER__
+
+    if( audio_index >= 0
+            && pFormatCtx->streams[audio_index]->codec->sample_fmt != AV_SAMPLE_FMT_S16) {
+        is->audio_need_resample = 1;
+        is->pResampledOut = NULL;
+        is->pSwrCtx = NULL;
+
+        printf("Configure resampler: ");
+
+#ifdef __LIBAVRESAMPLE__
+        printf("libAvResample\n");
+        is->pSwrCtx = avresample_alloc_context();
+#endif
+
+#ifdef __LIBSWRESAMPLE__
+        printf("libSwResample\n");
+        is->pSwrCtx = swr_alloc();
+#endif
+
+        // Some MP3/WAV don't tell this so make assumtion that
+        // They are stereo not 5.1
+        if (pFormatCtx->streams[audio_index]->codec->channel_layout == 0
+                && pFormatCtx->streams[audio_index]->codec->channels == 2) {
+            pFormatCtx->streams[audio_index]->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+
+        } else if (pFormatCtx->streams[audio_index]->codec->channel_layout == 0
+                   && pFormatCtx->streams[audio_index]->codec->channels == 1) {
+            pFormatCtx->streams[audio_index]->codec->channel_layout = AV_CH_LAYOUT_MONO;
+
+        } else if (pFormatCtx->streams[audio_index]->codec->channel_layout == 0
+                   && pFormatCtx->streams[audio_index]->codec->channels == 0) {
+            pFormatCtx->streams[audio_index]->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+            pFormatCtx->streams[audio_index]->codec->channels = 2;
+        }
+
+        av_opt_set_int(is->pSwrCtx, "in_channel_layout",
+                       pFormatCtx->streams[audio_index]->codec->channel_layout, 0);
+        av_opt_set_int(is->pSwrCtx, "in_sample_fmt",
+                       pFormatCtx->streams[audio_index]->codec->sample_fmt, 0);
+        av_opt_set_int(is->pSwrCtx, "in_sample_rate",
+                       pFormatCtx->streams[audio_index]->codec->sample_rate, 0);
+
+        av_opt_set_int(is->pSwrCtx, "out_channel_layout", AV_CH_LAYOUT_STEREO, 0);
+        av_opt_set_int(is->pSwrCtx, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
+        av_opt_set_int(is->pSwrCtx, "out_sample_rate", 44100, 0);
+
+#ifdef __LIBAVRESAMPLE__
+
+        if (avresample_open(is->pSwrCtx) < 0) {
+#else
+
+        if (swr_init(is->pSwrCtx) < 0) {
+#endif
+            fprintf(stderr, " ERROR!! From Samplert: %d Hz Sample format: %s\n",
+                    pFormatCtx->streams[audio_index]->codec->sample_rate,
+                    av_get_sample_fmt_name(pFormatCtx->streams[audio_index]->codec->sample_fmt));
+            fprintf(stderr, "         To 44100 Sample format: s16\n");
+            is->audio_need_resample = 0;
+            is->pSwrCtx = NULL;;
+        }
+
+    }
+
+#endif
 
     // main decode loop
 
