@@ -133,7 +133,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     pkt1 = av_malloc(sizeof(AVPacketList));
 
-    if (!pkt1) {
+    if(!pkt1) {
         return -1;
     }
 
@@ -142,7 +142,7 @@ int packet_queue_put(PacketQueue *q, AVPacket *pkt) {
 
     SDL_LockMutex(q->mutex);
 
-    if (!q->last_pkt) {
+    if(!q->last_pkt) {
         q->first_pkt = pkt1;
     }
 
@@ -173,10 +173,10 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
 
         pkt1 = q->first_pkt;
 
-        if (pkt1) {
+        if(pkt1) {
             q->first_pkt = pkt1->next;
 
-            if (!q->first_pkt) {
+            if(!q->first_pkt) {
                 q->last_pkt = NULL;
             }
 
@@ -187,7 +187,7 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
             ret = 1;
             break;
 
-        } else if (!block) {
+        } else if(!block) {
             ret = 0;
             break;
 
@@ -290,7 +290,7 @@ int synchronize_audio(VideoState *is, short *samples,
                     if(wanted_size < min_size) {
                         wanted_size = min_size;
 
-                    } else if (wanted_size > max_size) {
+                    } else if(wanted_size > max_size) {
                         wanted_size = max_size;
                     }
 
@@ -345,7 +345,7 @@ int audio_decode_frame(VideoState *is, double *pts_ptr) {
                 break;
             }
 
-            if (got_frame) {
+            if(got_frame) {
                 data_size =
                     av_samples_get_buffer_size
                     (
@@ -399,7 +399,7 @@ int audio_decode_frame(VideoState *is, double *pts_ptr) {
 
         /* if update, update the audio clock w/pts */
         if(pkt->pts != AV_NOPTS_VALUE) {
-            is->audio_clock = av_q2d(is->audio_st->time_base)*pkt->pts;
+            is->audio_clock = av_q2d(is->audio_st->time_base) * pkt->pts;
         }
     }
 }
@@ -907,28 +907,28 @@ int decode_thread(void *arg) {
     int audio_index = -1;
     int i;
 
-    is->videoStream=-1;
-    is->audioStream=-1;
+    is->videoStream = -1;
+    is->audioStream = -1;
 
     global_video_state = is;
     // will interrupt blocking functions if we quit!
     callback.callback = decode_interrupt_cb;
     callback.opaque = is;
 
-    if (avio_open2(&is->io_context, is->filename, 0, &callback, &io_dict)) {
+    if(avio_open2(&is->io_context, is->filename, 0, &callback, &io_dict)) {
         fprintf(stderr, "Unable to open I/O for %s\n", is->filename);
         return -1;
     }
 
     // Open video file
-    if(avformat_open_input(&pFormatCtx, is->filename, NULL, NULL)!=0) {
+    if(avformat_open_input(&pFormatCtx, is->filename, NULL, NULL) != 0) {
         return -1;    // Couldn't open file
     }
 
     is->pFormatCtx = pFormatCtx;
 
     // Retrieve stream information
-    if(avformat_find_stream_info(pFormatCtx, NULL)<0) {
+    if(avformat_find_stream_info(pFormatCtx, NULL) < 0) {
         return -1;    // Couldn't find stream information
     }
 
@@ -936,15 +936,15 @@ int decode_thread(void *arg) {
     av_dump_format(pFormatCtx, 0, is->filename, 0);
 
     // Find the first video stream
-    for(i=0; i<pFormatCtx->nb_streams; i++) {
-        if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO &&
+    for(i = 0; i < pFormatCtx->nb_streams; i++) {
+        if(pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
                 video_index < 0) {
-            video_index=i;
+            video_index = i;
         }
 
-        if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_AUDIO &&
+        if(pFormatCtx->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
                 audio_index < 0) {
-            audio_index=i;
+            audio_index = i;
         }
     }
 
@@ -970,10 +970,10 @@ int decode_thread(void *arg) {
 
         // seek stuff goes here
         if(is->seek_req) {
-            int stream_index= -1;
+            int stream_index = -1;
             int64_t seek_target = is->seek_pos;
 
-            if     (is->videoStream >= 0) {
+            if(is->videoStream >= 0) {
                 stream_index = is->videoStream;
             }
 
@@ -981,8 +981,8 @@ int decode_thread(void *arg) {
                 stream_index = is->audioStream;
             }
 
-            if(stream_index>=0) {
-                seek_target= av_rescale_q(seek_target, AV_TIME_BASE_Q, pFormatCtx->streams[stream_index]->time_base);
+            if(stream_index >= 0) {
+                seek_target = av_rescale_q(seek_target, AV_TIME_BASE_Q, pFormatCtx->streams[stream_index]->time_base);
             }
 
             if(av_seek_frame(is->pFormatCtx, stream_index, seek_target, is->seek_flags) < 0) {
