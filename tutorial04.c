@@ -206,7 +206,7 @@ static int packet_queue_get(PacketQueue *q, AVPacket *pkt, int block) {
     return ret;
 }
 
-int audio_tutorial_resample(VideoState *is, struct AVFrame *inframe) {
+long audio_tutorial_resample(VideoState *is, struct AVFrame *inframe) {
 
 #ifdef __RESAMPLER__
 
@@ -225,7 +225,7 @@ int audio_tutorial_resample(VideoState *is, struct AVFrame *inframe) {
 
 
     int resample_nblen = 0;
-    unsigned int resample_int_bytes = 0;
+    long resample_long_bytes = 0;
 
     if( is->pResampledOut == NULL || inframe->nb_samples > is->resample_size) {
 #if __LIBAVRESAMPLE__
@@ -277,7 +277,7 @@ int audio_tutorial_resample(VideoState *is, struct AVFrame *inframe) {
                                  (const uint8_t **)resample_input_bytes, inframe->nb_samples);
 #endif
 
-    resample_int_bytes = av_samples_get_buffer_size(NULL, 2, resample_nblen,
+    resample_long_bytes = av_samples_get_buffer_size(NULL, 2, resample_nblen,
                          AV_SAMPLE_FMT_S16, 1);
 
     if (resample_nblen < 0) {
@@ -285,16 +285,21 @@ int audio_tutorial_resample(VideoState *is, struct AVFrame *inframe) {
         return -1;
     }
 
-    return resample_int_bytes;
+    return resample_long_bytes;
 
 #else
     return -1;
 #endif
 }
 
-int audio_decode_frame(VideoState *is) {
-    int len1, data_size = 0;
+long audio_decode_frame(VideoState *is) {
+    /* For example with wma audio package size can be
+       like 100 000 bytes */
+    long len1, data_size = 0;
     AVPacket *pkt = &is->audio_pkt;
+#ifdef __RESAMPLER__
+    long resample_size = 0;
+#endif
 
     for(;;) {
         while(is->audio_pkt_size > 0) {
@@ -318,10 +323,19 @@ int audio_decode_frame(VideoState *is) {
                         1
                     );
 
+                if(data_size <= 0) {
+                    /* No data yet, get more frames */
+                    continue;
+                }
+
 #ifdef __RESAMPLER__
 
                 if(is->audio_need_resample == 1) {
-                    int resample_size = audio_tutorial_resample(is, &is->audio_frame);
+                    /* We need to resample data from S16P or FLTP to
+                       S16 so size of data can be diffrent than in original
+                       FLTP is 32 bits and S16P is as name said 15 bits
+                       Resampled 32 is half size... */
+                    resample_size = audio_tutorial_resample(is, &is->audio_frame);
 
                     if( resample_size > 0 ) {
                         memcpy(is->audio_buf, is->pResampledOut, resample_size);
@@ -330,7 +344,6 @@ int audio_decode_frame(VideoState *is) {
 
                 } else {
 #endif
-
                     memcpy(is->audio_buf, is->audio_frame.data[0], data_size);
 #ifdef __RESAMPLER__
                 }
@@ -341,13 +354,22 @@ int audio_decode_frame(VideoState *is) {
             is->audio_pkt_data += len1;
             is->audio_pkt_size -= len1;
 
-            if(data_size <= 0) {
-                /* No data yet, get more frames */
-                continue;
+#ifdef __RESAMPLER__
+
+            /* If you just return original data_size you will suffer
+               for clicks because you don't have that much data in
+               queue incoming so return resampled size. */
+            if(is->audio_need_resample == 1) {
+                return resample_size;
+
+            } else {
+#endif
+                /* We have data, return it and come back for more later */
+                return data_size;
+#ifdef __RESAMPLER__
             }
 
-            /* We have data, return it and come back for more later */
-            return data_size;
+#endif
         }
 
         if(pkt->data) {
@@ -371,7 +393,7 @@ int audio_decode_frame(VideoState *is) {
 void audio_callback(void *userdata, Uint8 *stream, int len) {
 
     VideoState *is = (VideoState *)userdata;
-    int len1, audio_size;
+    long len1, audio_size;
 
     while(len > 0) {
         if(is->audio_buf_index >= is->audio_buf_size) {

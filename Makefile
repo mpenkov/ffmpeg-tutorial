@@ -12,7 +12,7 @@ FFMPEG_PKGCONFIG_RESAMPLE=libavresample
 
 CC:=gcc
 INCLUDES:=$(shell pkg-config --cflags libavformat libavcodec libswscale libavutil $(FFMPEG_PKGCONFIG_RESAMPLE) sdl)
-CFLAGS:=-Wall -ggdb $(FFMPEG_RESAMPLE)
+CFLAGS:=-Wall -ggdb $(FFMPEG_RESAMPLE) -std=c99
 LDFLAGS:=$(shell pkg-config --libs libavformat libavcodec libswscale libavutil $(FFMPEG_PKGCONFIG_RESAMPLE) sdl) -lm
 EXE:=tutorial01.out tutorial02.out tutorial03.out tutorial04.out\
 	tutorial05.out tutorial06.out tutorial07.out
