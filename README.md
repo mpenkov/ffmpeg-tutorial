@@ -6,7 +6,8 @@ This repository is fork from original repo
 * https://github.com/chelyaev/ffmpeg-tutorial
 
 Mainly because there is audio broken and code is not keep in shape in order
-to maintain maximum compatibility to tutorial
+to maintain maximum compatibility to tutorial. All the warnings are also
+removed so there is no depricated code.
 
 In Makefile there is possibility to use libavresample or libswresample which
 you have installed is not auto detected! They are under run time which
@@ -54,6 +55,39 @@ so that the original code and tutorial descriptions could be easily consulted.
 
 The code from the original tutorial and the accompanying description is located
 [here](http://dranger.com/ffmpeg/).
+
+Coding coventions
+-----------------
+This repository is styled with
+
+<pre>
+astyle --indent=spaces=4 -K -S -j -c -F -f --style=java -p --lineend=linux
+</pre>
+
+So it won't merge with original anymore and if you want to make pull request
+all the requests should be also styled as that astyle line (with hand or astyle).
+
+Example looks like this
+<pre>
+    codec = avcodec_find_decoder(codecCtx->codec_id);
+
+    if(!codec || (avcodec_open2(codecCtx, codec, &optionsDict) < 0)) {
+        fprintf(stderr, "Unsupported codec!\n");
+        return -1;
+    }
+
+    switch(codecCtx->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            is->audioStream = stream_index;
+            is->audio_st = pFormatCtx->streams[stream_index];
+            is->audio_buf_size = 0;
+            is->audio_buf_index = 0;
+            memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
+            packet_queue_init(&is->audioq);
+            SDL_PauseAudio(0);
+            break;
+</pre>
+
 
 Main changes
 ------------
