@@ -481,7 +481,7 @@ int audio_decode_frame(VideoState *is, double *pts_ptr) {
 #ifdef __RESAMPLER__
 
                 if(is->audio_need_resample == 1) {
-                    resample_size = audio_tutorial_resample(is, &is->audio_frame);
+                    int resample_size = audio_tutorial_resample(is, &is->audio_frame);
 
                     if( resample_size > 0 ) {
                         memcpy(is->audio_buf, is->pResampledOut, resample_size);
