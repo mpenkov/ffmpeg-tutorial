@@ -1,6 +1,11 @@
 ffmpeg-tutorial
 ===============
 
+* * *
+The [original tutorials](http://dranger.com/ffmpeg/) have now been [updated](https://ffmpeg.org/pipermail/libav-user/2015-February/007896.html).
+I won't be maintaining this project anymore, and am keeping it here for historical reasons.
+* * *
+
 This repository contains files from an FFmpeg tutorial originally written by
 Stephen Dranger (dranger@gmail.com).  The files have been updated to work with
 the most recent version of FFmpeg (see VERSION.txt for the most recent version 
