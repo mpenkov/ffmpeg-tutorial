@@ -2,9 +2,9 @@
 # http://www.gnu.org/software/make/manual/make.html
 #
 CC:=gcc
-INCLUDES:=$(shell pkg-config --cflags libavformat libavcodec libswscale libavutil sdl)
+INCLUDES:=$(shell pkg-config --cflags libavformat libavcodec libswresample libswscale libavutil sdl)
 CFLAGS:=-Wall -ggdb
-LDFLAGS:=$(shell pkg-config --libs libavformat libavcodec libswscale libavutil sdl) -lm
+LDFLAGS:=$(shell pkg-config --libs libavformat libavcodec libswresample libswscale libavutil sdl) -lm
 EXE:=tutorial01.out tutorial02.out tutorial03.out tutorial04.out\
 	tutorial05.out tutorial06.out tutorial07.out
 
