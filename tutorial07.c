@@ -105,7 +105,7 @@ typedef struct VideoState {
 
   AVIOContext     *io_context;
   struct SwsContext *sws_ctx;
-  struct SwsContext *sws_ctx_audio;
+  struct SwrContext *swr_ctx_audio;
 } VideoState;
 
 enum {
@@ -325,15 +325,15 @@ int decode_frame_from_packet(VideoState *is, AVFrame decoded_frame)
 	src_sample_fmt = decoded_frame.format;
 	dst_sample_fmt = AV_SAMPLE_FMT_S16;
 
-	av_opt_set_int(is->sws_ctx_audio, "in_channel_layout", src_ch_layout, 0);
-	av_opt_set_int(is->sws_ctx_audio, "out_channel_layout", dst_ch_layout,  0);
-	av_opt_set_int(is->sws_ctx_audio, "in_sample_rate", src_rate, 0);
-	av_opt_set_int(is->sws_ctx_audio, "out_sample_rate", dst_rate, 0);
-	av_opt_set_sample_fmt(is->sws_ctx_audio, "in_sample_fmt", src_sample_fmt, 0);
-	av_opt_set_sample_fmt(is->sws_ctx_audio, "out_sample_fmt", dst_sample_fmt,  0);
+	av_opt_set_int(is->swr_ctx_audio, "in_channel_layout", src_ch_layout, 0);
+	av_opt_set_int(is->swr_ctx_audio, "out_channel_layout", dst_ch_layout,  0);
+	av_opt_set_int(is->swr_ctx_audio, "in_sample_rate", src_rate, 0);
+	av_opt_set_int(is->swr_ctx_audio, "out_sample_rate", dst_rate, 0);
+	av_opt_set_sample_fmt(is->swr_ctx_audio, "in_sample_fmt", src_sample_fmt, 0);
+	av_opt_set_sample_fmt(is->swr_ctx_audio, "out_sample_fmt", dst_sample_fmt,  0);
 
 	/* initialize the resampling context */
-	if ((ret = swr_init(is->sws_ctx_audio)) < 0) {
+	if ((ret = swr_init(is->swr_ctx_audio)) < 0) {
 		fprintf(stderr, "Failed to initialize the resampling context\n");
 		return -1;
 	}
@@ -360,10 +360,10 @@ int decode_frame_from_packet(VideoState *is, AVFrame decoded_frame)
 	}
 
 	/* compute destination number of samples */
-	dst_nb_samples = av_rescale_rnd(swr_get_delay(is->sws_ctx_audio, src_rate) + src_nb_samples, dst_rate, src_rate, AV_ROUND_UP);
+	dst_nb_samples = av_rescale_rnd(swr_get_delay(is->swr_ctx_audio, src_rate) + src_nb_samples, dst_rate, src_rate, AV_ROUND_UP);
 
 	/* convert to destination format */
-	ret = swr_convert(is->sws_ctx_audio, dst_data, dst_nb_samples, (const uint8_t **)decoded_frame.data, src_nb_samples);
+	ret = swr_convert(is->swr_ctx_audio, dst_data, dst_nb_samples, (const uint8_t **)decoded_frame.data, src_nb_samples);
 	if (ret < 0) {
 		fprintf(stderr, "Error while converting\n");
 		return -1;
@@ -856,8 +856,8 @@ int stream_component_open(VideoState *is, int stream_index) {
     /* Correct audio only if larger error than this */
     is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / codecCtx->sample_rate;
 
-	is->sws_ctx_audio = swr_alloc();
-	if (!is->sws_ctx_audio) {
+	is->swr_ctx_audio = swr_alloc();
+	if (!is->swr_ctx_audio) {
 		fprintf(stderr, "Could not allocate resampler context\n");
 		return -1;
 	}
